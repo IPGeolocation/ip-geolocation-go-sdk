@@ -1,0 +1,4548 @@
+openapi: 3.0.3
+info:
+  description: Ipgeolocation provides a set of APIs to make ip based decisions.
+  termsOfService: example.com
+  title: IPGeolocation.io - IP intelligence products
+  version: "2.0"
+servers:
+- description: Test server
+  url: https://api.ipgeolocation.io/v2
+tags:
+- description: IP Geolocation Details
+  name: IP Location
+- description: "Provides details about IP reputation and anonymity indicators such\
+    \ as VPN, proxy, TOR, spam, and bot detection."
+  name: Security
+- description: Timezone Details
+  name: Timezone
+- description: Time conversion
+  name: Time Conversion
+- description: Get User Agent Details
+  name: User Agent
+- description: Get Astronomy details
+  name: Astronomy
+- description: Get the complete information about ASN Lookup
+  name: ASN Lookup
+- description: Get the complete information about Abuse Contact email addresses and
+    phone numbers.
+  name: Abuse Contact
+paths:
+  /ipgeo:
+    get:
+      description: "IP Geolocation API provides real-time and accurate geolocation,\
+        \ network, abuse, and security information for any IPv4 or IPv6 address and\
+        \ domain name along with the user-agent detail for the provided user-agent\
+        \ string. You can geolocate your online visitors and provide them the customized\
+        \ user-experience accordingly."
+      operationId: getIpGeolocation
+      parameters:
+      - description: "In order to find geolocation information about an IP (ipv4 ipv6)\
+          \ address or a domain name, pass it as a query parameter ip. When this endpoint\
+          \ is queried without an IP address, it returns the geolocation information\
+          \ of the device/client which is calling it"
+        example: 8.8.8.8 OR dns.google.com
+        explode: true
+        in: query
+        name: ip
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: "By default, the API responds in English. You can change the\
+          \ response language by passing the language code as a query parameter `lang`.\
+          \ Multi language feature is available only for `paid users`."
+        explode: true
+        in: query
+        name: lang
+        required: false
+        schema:
+          enum:
+          - en
+          - de
+          - ru
+          - ja
+          - fr
+          - cn
+          - es
+          - cs
+          - it
+          - ko
+          - fa
+          - pt
+          example: en
+          type: string
+        style: form
+      - description: "you can filter the API response by specifying the fields that\
+          \ you need, instead of getting the full response. To do this, pass the desired\
+          \ field names using the `fields` query parameter with each field represented\
+          \ as a dot-separated path."
+        example: "location, location.country_name, network.asn.organization"
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: "you can also filter the API response by excluding specific fields\
+          \ (except the IP address) that you don't need. To do this, pass the unwanted\
+          \ field names using the excludes query parameter, with each field represented\
+          \ as a dot-separated path"
+        example: "location.continent_code,currency,network"
+        explode: true
+        in: query
+        name: excludes
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: "IP Geolocation API also provides IP-Security, abuse, timezone,\
+          \ user-agent and DMA (Designated Market Area) code, which is specifically\
+          \ used in the US for marketing and regional targeting information on Advanced\
+          \ API subscription, but doesn't respond it by default. To get these information\
+          \ along with the geolocation information, you must pass the `include=security`\
+          \ or `include=abuse` or `include=dma` or `include=time_zone` or `include=user-agent`\
+          \ or you can fetch multiples by adding values in comma-separated way. In\
+          \ addition to that, IPGeolocation API also provide hostname lookup for an\
+          \ IP address on all the paid API subscriptions (STANDARD and ADVANCED),\
+          \ but doesn't respond it by default. To get the hostname for an IP address,\
+          \ you can pass one of the three values `hostname, liveHostname, hostnameFallbackLive`\
+          \ as a URL parameter `include=`."
+        explode: true
+        in: query
+        name: include
+        required: false
+        schema:
+          example: security
+          type: string
+        style: form
+      - description: Desired output format (json or xml).
+        explode: true
+        in: query
+        name: output
+        required: false
+        schema:
+          example: json
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeolocationResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/GeolocationXMLResponse'
+          description: successful response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Bad Request – Possible reasons include:\n  - If the provided\
+            \ IPv4, IPv6 address, or domain name is invalid.\n\n  - If special character(s)\
+            \ ( ) [ ] { } | ^ ` is passed in the API URL either as paramter or its\
+            \ value. Specially in case of API key.\n  \n  \n"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Unauthorized – Possible reasons include:\n  - Missing or invalid\
+            \ API key\n  - Account unverified, locked, or disabled\n  - Accessing\
+            \ API with an unauthorized key\n  - Subscription expired or downgraded\n\
+            \  - If your account has been disabled or locked to use by the admin due\
+            \ to abuse or illegal activity.\n  - When the request to IP Security API\
+            \ is made using API key for a database subscription\n  - When the request\
+            \ to IP Security API is made on the 'paused' subscription.\n  - If you’\
+            re making API requests after your subscription trial has been expired.\n\
+            \  - If your active until date has passed and you need to upgrade your\
+            \ account.\n  \n  - If IP-hostname lookup, IP-security lookup or user-agent\
+            \ parsing endpoint is called using free subsciption API key.\n"
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Forbidden | Possible reasons include:\n  - If IP to geolocation\
+            \ look-up for a domain name is done using a free subscription API key.\n\
+            \  \n"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Not Found – Possible reasons include:\n  - If the IPv4, IPv6,\
+            \ or domain name does not exist in our database.\n\n  - If the IPv4, IPv6,\
+            \ or domain name is passed as a path variable, instead of url parameter\
+            \ as ip=.\n  \n  - If the wrong endpoint is called, that does not exist\
+            \ in our API.\n"
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Method Not Allowed – Only GET is allowed for `/ipgeo` endpoint
+        "423":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "If the passed IP address is from a bogon ip ranges, or is\
+            \ part of a private network."
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Too Many Requests – Possible reasons include:\n  - If the\
+            \ API usage limit has reached for the free subscriptions, or paid subscriptions\
+            \ with the status 'past due', 'deleted' or 'trial expired'.\n\n  - If\
+            \ the surcharge API usage limit has reached against the subscribed plan.\n\
+            \  \n"
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      tags:
+      - IP Location
+  /ipgeo-bulk:
+    post:
+      description: "This feature is available only on our paid API subscriptions (STANDARD\
+        \ or ADVANCED). This endpoint allows you to perform the geolocation lookup\
+        \ for multiple IPv4, IPv6 addresses or domain names (maximum 50,000) at the\
+        \ same time. The requests count per lookup is equal to total IP addresses\
+        \ or domain names passed. To perform bulk IP Geolocation Lookup, send a POST\
+        \ request and pass the \"ips\" array as JSON data along with it. \n"
+      operationId: getBulkIpGeolocation
+      parameters:
+      - description: "By default, the API responds in English. You can change the\
+          \ response language by passing the language code as a query parameter `lang`.\
+          \ Multi language feature is available only for `paid users`."
+        explode: true
+        in: query
+        name: lang
+        required: false
+        schema:
+          enum:
+          - en
+          - de
+          - ru
+          - ja
+          - fr
+          - cn
+          - es
+          - cs
+          - it
+          - ko
+          - fa
+          - pt
+          example: en
+          type: string
+        style: form
+      - description: "you can filter the API response by specifying the fields that\
+          \ you need, instead of getting the full response. To do this, pass the desired\
+          \ field names using the `fields` query parameter with each field represented\
+          \ as a dot-separated path."
+        example: "location, location.country_name, network.asn.organization"
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: "you can also filter the API response by excluding specific fields\
+          \ (except the IP address) that you don't need. To do this, pass the unwanted\
+          \ field names using the excludes query parameter, with each field represented\
+          \ as a dot-separated path"
+        example: "location.continent_code,currency,network"
+        explode: true
+        in: query
+        name: excludes
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: "IP Geolocation API also provides IP-Security, abuse, timezone,\
+          \ user-agent and DMA (Designated Market Area) code, which is specifically\
+          \ used in the US for marketing and regional targeting information on Advanced\
+          \ API subscription, but doesn't respond it by default. To get these information\
+          \ along with the geolocation information, you must pass the `include=security`\
+          \ or `include=abuse` or `include=dma` or `include=time_zone` or `include=user-agent`\
+          \ or you can fetch multiples by adding values in comma-separated way. In\
+          \ addition to that, IPGeolocation API also provide hostname lookup for an\
+          \ IP address on all the paid API subscriptions (STANDARD and ADVANCED),\
+          \ but doesn't respond it by default. To get the hostname for an IP address,\
+          \ you can pass one of the three values `hostname, liveHostname, hostnameFallbackLive`\
+          \ as a URL parameter `include=`."
+        explode: true
+        in: query
+        name: include
+        required: false
+        schema:
+          example: security
+          type: string
+        style: form
+      - description: Desired output format(json or xml).
+        explode: true
+        in: query
+        name: output
+        required: false
+        schema:
+          example: json
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getBulkIpGeolocation_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/getBulkIpGeolocation_200_response_inner'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/getBulkIpGeolocation_200_response_inner_1'
+                type: array
+                xml:
+                  name: ArrayList
+                  wrapped: true
+          description: success
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Bad Request – Possible reasons include:\n  - If the provided\
+            \ IPv4, IPv6 address, or domain name is invalid.\n\n  - If special character(s)\
+            \ ( ) [ ] { } | ^ ` is passed in the API URL either as paramter or its\
+            \ value. Specially in case of API key.\n  \n  - If the IP addresses JSON\
+            \ list is empty, or the provided JSON does not have 'ips' field while\
+            \ querying /ipgeo-bulk endpoint.\n\n  - If more than 50,000 IP addresses\
+            \ are provided while quering from /ipgeo-bulk endpoint.\n  \n  \n"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Unauthorized – Possible reasons include:\n  - Missing or invalid\
+            \ API key\n  - Account unverified, locked, or disabled\n  - Accessing\
+            \ API with an unauthorized key\n  - Subscription expired or downgraded\n\
+            \  - If your account has been disabled or locked to use by the admin due\
+            \ to abuse or illegal activity.\n  - When the request to IP Security API\
+            \ is made using API key for a database subscription\n  - When the request\
+            \ to IP Security API is made on the 'paused' subscription.\n  - If you’\
+            re making API requests after your subscription trial has been expired.\n\
+            \  - If your active until date has passed and you need to upgrade your\
+            \ account.\n  \n  - If IP-hostname lookup, IP-security lookup or user-agent\
+            \ parsing endpoint is called using free subsciption API key.\n\n  - If\
+            \ bulk IP to geolocation look-ups endpoint is called using free subscription\
+            \ API key.\n"
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Forbidden | Possible reasons include:\n  - If IP to geolocation\
+            \ look-up for a domain name is done using a free subscription API key.\n\
+            \  \n"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Not Found – Possible reasons include:\n  - If the IPv4, IPv6,\
+            \ or domain name does not exist in our database.\n\n  - If the IPv4, IPv6,\
+            \ or domain name is passed as a path variable, instead of url parameter\
+            \ as ip=.\n  \n  - If the wrong endpoint is called, that does not exist\
+            \ in our API.\n"
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Method Not Allowed – Only POST is allowed for `/ipgeo-bulk`
+            endpoint
+        "413":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: If the passed data in the POST requests is more than the limit
+            of the API.
+        "415":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "If the payload for IPs in /ipgeo-bulk endpoint is mising,\
+            \ or the content type is not mentioned as JSON."
+        "423":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "If the passed IP address is from a bogon ip ranges, or is\
+            \ part of a private network."
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Too Many Requests – Possible reasons include:\n  - If the\
+            \ API usage limit has reached for the free subscriptions, or paid subscriptions\
+            \ with the status 'past due', 'deleted' or 'trial expired'.\n\n  - If\
+            \ the surcharge API usage limit has reached against the subscribed plan.\n\
+            \  \n"
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      tags:
+      - IP Location
+  /security:
+    get:
+      description: "IP Security API provides security details of a given IP. It detects\
+        \ whether the IP is proxy, tor or bot. It also shows the proxy types of the\
+        \ IP (like VPN, PROXY, RELAY etc.) with it's VPN/proxy service provider making\
+        \ our API powerful VPN checker. It finds the IPs that are involved in spam\
+        \ activities. It also checks whether the IP links to a cloud provider and\
+        \ includes the provider's name."
+      operationId: getIpSecurityInfo
+      parameters:
+      - description: "query parameter 'ip'. If not provided, will be your network\
+          \ IP"
+        explode: true
+        in: query
+        name: ip
+        required: false
+        schema:
+          example: 8.8.8.8
+          type: string
+        style: form
+      - description: Include optional details like location and/or network.
+        example: "location,network,currency,time_zone,user_agent,country_metadata,hostname"
+        explode: true
+        in: query
+        name: include
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: "Get specific fields, objects from the response."
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          example: "security.is_tor, location,"
+          type: string
+        style: form
+      - description: "Exclude specific fields, objects from the response."
+        explode: true
+        in: query
+        name: excludes
+        required: false
+        schema:
+          example: security.is_cloud_provider
+          type: string
+        style: form
+      - description: Desired output format (json or xml).
+        explode: true
+        in: query
+        name: output
+        required: false
+        schema:
+          example: json
+          type: string
+        style: form
+      - description: "By default, the API responds in English. You can change the\
+          \ response language by passing the language code as a query parameter `lang`.\
+          \ Multi language feature is available only for `paid users`."
+        explode: true
+        in: query
+        name: lang
+        required: false
+        schema:
+          enum:
+          - en
+          - de
+          - ru
+          - ja
+          - fr
+          - cn
+          - es
+          - cs
+          - it
+          - ko
+          - fa
+          - pt
+          example: en
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityAPIResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/SecurityAPIXMLResponse'
+          description: "Get the security details of the ip. It may include the following\
+            \ information \nsubjecting to the availability of query parameters \n\
+            - If include=network, it will include network object \n- If include=location,\
+            \ it will include location object \n- If include=location,network, it\
+            \ will include both objects \n- To get specific fields/object, use fields=field_name\
+            \ e.g., security.is_tor\n- to exclude fields, same can be done\n"
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Bad Request – Possible reasons include:\n  - If the provided\
+            \ IPv4, IPv6 address is invalid.\n\n  - If special character(s) ( ) [\
+            \ ] { } | ^ ` is passed in the API URL either as paramter or its value.\
+            \ Specially in case of API key.\n  \n  \n"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Unauthorized – Possible reasons include:
+              - Missing or invalid API key
+              - Account unverified, locked, or disabled
+              - Accessing API with an unauthorized key
+              - Subscription expired or downgraded
+              - If your account has been disabled or locked to use by the admin due to abuse or illegal activity.
+              - When the request to IP Security API is made using API key for a database subscription
+              - When the request to IP Security API is made on the 'paused' subscription.
+              - If you’re making API requests after your subscription trial has been expired.
+              - If your active until date has passed and you need to upgrade your account.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Not Found – Possible reasons include:\n  - If the IPv4, IPv6,\
+            \ or domain name does not exist in our database.\n\n  - If the IPv4, IPv6,\
+            \ or domain name is passed as a path variable, instead of url parameter\
+            \ as ip=.\n  \n  - If the wrong endpoint is called, that does not exist\
+            \ in our API.\n"
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Method Not Allowed – Only GET is allowed for `/security` endpoint
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Too Many Requests – Possible reasons include:\n  - If the\
+            \ API usage limit has reached for the free subscriptions, or paid subscriptions\
+            \ with the status 'past due', 'deleted' or 'trial expired'.\n\n  - If\
+            \ the surcharge API usage limit has reached against the subscribed plan.\n\
+            \  \n"
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      tags:
+      - Security
+  /security-bulk:
+    post:
+      description: "The Bulk IP Security Lookup API can provide security details for\
+        \ up to `50,000` bulk IPs. This API also has parameters to customize the response,\
+        \ just like the single IP Security Lookup API."
+      operationId: getBulkIpSecurityInfo
+      parameters:
+      - description: |
+          Include optional objects like `location`, `network`.  Use comma-separated values. Example: include=location,network
+        explode: true
+        in: query
+        name: include
+        required: false
+        schema:
+          example: "location,network,currency,time_zone,user_agent,country_metadata,hostname"
+          type: string
+        style: form
+      - description: "Get specific fields, objects from the response."
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          example: "security.is_tor, location,"
+          type: string
+        style: form
+      - description: "Exclude specific fields, objects from the response."
+        explode: true
+        in: query
+        name: excludes
+        required: false
+        schema:
+          example: security.is_cloud_provider
+          type: string
+        style: form
+      - description: Desired output format.
+        explode: true
+        in: query
+        name: output
+        required: false
+        schema:
+          example: json
+          type: string
+        style: form
+      - description: "By default, the API responds in English. You can change the\
+          \ response language by passing the language code as a query parameter `lang`.\
+          \ Multi language feature is available only for `paid users`."
+        explode: true
+        in: query
+        name: lang
+        required: false
+        schema:
+          enum:
+          - en
+          - de
+          - ru
+          - ja
+          - fr
+          - cn
+          - es
+          - cs
+          - it
+          - ko
+          - fa
+          - pt
+          example: en
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getBulkIpGeolocation_request'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/getBulkIpSecurityInfo_200_response_inner'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/getBulkIpSecurityInfo_200_response_inner_1'
+                type: array
+                xml:
+                  name: ArrayList
+                  wrapped: true
+          description: "Get the security details of bulk IPs. It may include the following\
+            \ information \nsubjecting to the availability of query parameters \n\
+            - If include=network, it will include network object \n- If include=location,\
+            \ it will include location object \n- If include=location,network, it\
+            \ will include both objects \n- To get specific fields/object, use fields=field_name\
+            \ e.g., security.is_tor\n- to exclude fields, same can be done\n"
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Bad Request – Possible reasons include:\n  - If the provided\
+            \ IPv4, IPv6 address, or domain name is invalid.\n\n  - If special character(s)\
+            \ ( ) [ ] { } | ^ ` is passed in the API URL either as paramter or its\
+            \ value. Specially in case of API key.\n  \n  - If the IP addresses JSON\
+            \ list is empty, or the provided JSON does not have 'ips' field while\
+            \ querying /security-bulk endpoint.\n  \n  - If more than 50,000 IP addresses\
+            \ are provided while quering from /security-bulk endpoint.\n  \n"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Unauthorized – Possible reasons include:
+              - Missing or invalid API key
+              - Account unverified, locked, or disabled
+              - Accessing API with an unauthorized key
+              - Subscription expired or downgraded
+              - If your account has been disabled or locked to use by the admin due to abuse or illegal activity.
+              - When the request to IP Security API is made using API key for a database subscription
+              - When the request to IP Security API is made on the 'paused' subscription.
+              - If you’re making API requests after your subscription trial has been expired.
+              - If your active until date has passed and you need to upgrade your account.
+              - If bulk IP to security look-ups endpoint is called `using free subscription API key`.
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Forbidden | Possible reasons include:\n  - If IP to security\
+            \ look-up for a domain name is done using a free subscription API key.\n\
+            \  \n"
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Not Found – Possible reasons include:\n  - If the IPv4, IPv6,\
+            \ or domain name does not not exists in our database.\n\n  - If the IPv4,\
+            \ IPv6, or domain name is passed as a path variable, instead of url parameter\
+            \ as ip=.\n  \n  - If the wrong endpoint is called, that does not exists\
+            \ in our API.\n"
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Method Not Allowed – Only POST method is allowed for `/security-bulk`
+            endpoint
+        "413":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Content Too Large – Possible reasons include:\n  - If the\
+            \ passed data in the POST requests is more than the limit of the API.\n\
+            \  \n"
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Too Many Requests – Possible reasons include:\n  - If the\
+            \ API usage limit has reached for the free subscriptions, or paid subscriptions\
+            \ with the status 'past due', 'deleted' or 'trial expired'.\n\n  - If\
+            \ the surcharge API usage limit has reached against the subscribed plan.\n\
+            \  \n"
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      tags:
+      - Security
+  /timezone:
+    get:
+      description: |
+        The Time Zone API provides current time, date, and time zone-related information. It supports various input types including time zone name, geographic coordinates, addresses, IPs, and location codes.
+
+        The API determines the time zone based on the following priority order if multiple parameters are provided:
+          1. Time Zone Name
+          2. Geographic Coordinates (latitude & longitude)
+          3. Location Address
+          4. IP Address
+          5. IATA Code
+          6. ICAO Code
+          7. UN/LOCODE
+
+        Enriched response data is returned based on the type of input:
+        - IP: includes geolocation info
+        - Address: includes location metadata
+        - IATA/ICAO: includes airport info
+        - UN/LOCODE: includes city details
+
+        You can call the time zone API without passing any time zone, coordinates, IATA, ICAO, LO code or IP address as well. It will use the calling machine's IP address to return the regional time zone information.
+      operationId: getTimezoneInfo
+      parameters:
+      - description: pass a valid time zone name as a query parameter tz to get the
+          time zone information.
+        explode: true
+        in: query
+        name: tz
+        required: false
+        schema:
+          example: America/Los_Angeles
+          type: string
+        style: form
+      - description: pass any address of a location as the query parameter location
+          to get the time zone information.
+        explode: true
+        in: query
+        name: location
+        required: false
+        schema:
+          example: "London, UK"
+          type: string
+        style: form
+      - description: pass the latitude of a location as query parameters to get the
+          time zone information.
+        explode: true
+        in: query
+        name: lat
+        required: false
+        schema:
+          example: -27.4748
+          format: float
+          type: number
+        style: form
+      - description: pass the longitude of a location as query parameters to get the
+          time zone information.
+        explode: true
+        in: query
+        name: long
+        required: false
+        schema:
+          example: 153.017
+          format: float
+          type: number
+        style: form
+      - description: You can pass any IPv4 or IPv6 address as a query parameter ip
+          to get the regional timezone information.
+        explode: true
+        in: query
+        name: ip
+        required: false
+        schema:
+          example: 1.1.1.1
+          type: string
+        style: form
+      - description: "pass any 3 letter IATA code as a query paramter iata_code to\
+          \ get the comprehensive airport details along with the time zone information,\
+          \ in which that airport exists."
+        explode: true
+        in: query
+        name: iata_code
+        required: false
+        schema:
+          example: DXB
+          type: string
+        style: form
+      - description: "pass any 4 letter ICAO code as a query paramter icao_code to\
+          \ get the comprehensive airport details along with the time zone information,\
+          \ in which that airport exists."
+        explode: true
+        in: query
+        name: icao_code
+        required: false
+        schema:
+          example: KATL
+          type: string
+        style: form
+      - description: pass any 5 letter UNLOCODE as a query paramter lo_code to get
+          the comprehensive lo code/city details along with the time zone information
+          of the concerned city.
+        explode: true
+        in: query
+        name: lo_code
+        required: false
+        schema:
+          example: DEBER
+          type: string
+        style: form
+      - description: Desired output format (json or xml).
+        explode: true
+        in: query
+        name: output
+        required: false
+        schema:
+          example: json
+          type: string
+        style: form
+      - description: "By default, the API responds in English. You can change the\
+          \ response language by passing the language code as a query parameter `lang`.\
+          \ Multi language feature is available only for `paid users`."
+        explode: true
+        in: query
+        name: lang
+        required: false
+        schema:
+          enum:
+          - en
+          - de
+          - ru
+          - ja
+          - fr
+          - cn
+          - es
+          - cs
+          - it
+          - ko
+          - fa
+          - pt
+          example: en
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeZoneDetailedResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/TimeZoneDetailedXMLResponse'
+          description: Successful response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Bad Request – Possible reasons include:\n  - If the provided\
+            \ IPv4, IPv6 address, or domain name is invalid.\n\n  - If special character(s)\
+            \ ( ) [ ] { } | ^ ` is passed in the API URL either as paramter or its\
+            \ value. Specially in case of API key.\n  \n  - If the provided IATA code\
+            \ to the request paramter iata_code is not in the format as three letter\
+            \ code AAA.\n  \n  - If the provided ICAO code to the request paramter\
+            \ icao_code is not in the format as four letter code AAAA.\n  \n  - If\
+            \ the provided UN/LOCODE to the request paramter lo_code is not in format\
+            \ as first two characters of country code, followed by the three alphanumeric\
+            \ characters of the city/region.\n  \n  - If the provided values to the\
+            \ request parameters lat andlong are not numbers, or the values fall outside\
+            \ the acceptable latitude and longitude ranges. The valid range for latitude\
+            \ is between -90 and 90, and for longitude, it is between -180 and 180.\n\
+            \  \n  - If the bogon or private IP address is provided to query the Time\
+            \ Zone information.\n  \n  - If the provided time zone name to the query\
+            \ paramter tz is wrong or not registered in the IANA time zone database.\n"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Unauthorized – Possible reasons include:
+              - Missing or invalid API key
+              - Account unverified, locked, or disabled
+              - Accessing API with an unauthorized key
+              - Subscription expired or downgraded
+              - If your account has been disabled or locked to use by the admin due to abuse or illegal activity.
+              - When the request to IP Geolocation API is made using API key for a database subscription
+              - When the request to IP Geolocation API is made on the 'paused' subscription.
+              - If you’re making API requests after your subscription trial has been expired.
+              - If your active until date has passed and you need to upgrade your account.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Not Found – Possible reasons include:\n  - If the IPv4, IPv6,\
+            \ or domain name does not not exists in our database.\n\n  - If the IPv4,\
+            \ IPv6, or domain name is passed as a path variable, instead of url parameter\
+            \ as ip=.\n  \n  - If the location address provided to the request paramters\
+            \ location is invalid. City or state level address must be provided.\n\
+            \  \n  - If the provided ICAO code to the request paramter icao_code is\
+            \ not in the format as four letter code AAAA.\n  \n  - If the provided\
+            \ UN/LOCODE, IATA code or ICAO code to the query paramters lo_code, iata_code,\
+            \ or icao_code does not exists in our database.\n  \n  - If the wrong\
+            \ endpoint is called, that does not exists in our API.\n"
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Method Not Allowed – Only GET is allowed for `/timezone` endpoint
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Too Many Requests – Possible reasons include:\n  - If the\
+            \ API usage limit has reached for the free subscriptions, or paid subscriptions\
+            \ with the status 'past due', 'deleted' or 'trial expired'.\n\n  - If\
+            \ the surcharge API usage limit has reached against the subscribed plan.\n\
+            \  \n"
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      summary: Timezone information details
+      tags:
+      - Timezone
+  /timezone/convert:
+    get:
+      description: You can convert a timestamp provided as a query paramter time from
+        one time zone to another time zone.
+      operationId: convertTimeBetweenTimezones
+      parameters:
+      - description: "time parameter takes the input in the following two formats:\
+          \ i) 'yyyy-MM-dd HH:mm', and ii) 'yyyy-MM-dd HH:mm:ss'. This parameter is\
+          \ optional and you can omit it to convert the current time between two coordinates,\
+          \ time zones or locations."
+        explode: true
+        in: query
+        name: time
+        required: false
+        schema:
+          example: 2025-02-28 9:00:00
+          type: string
+        style: form
+      - description: timezone to convert from
+        explode: true
+        in: query
+        name: tz_from
+        required: false
+        schema:
+          example: America/Argentina/Catamarca
+          type: string
+        style: form
+      - description: timezone to convert to
+        explode: true
+        in: query
+        name: tz_to
+        required: false
+        schema:
+          example: Asia/Kabul
+          type: string
+        style: form
+      - description: latitude to convert from
+        explode: true
+        in: query
+        name: lat_from
+        required: false
+        schema:
+          example: 34.0207305
+          format: float
+          type: number
+        style: form
+      - description: longitude to convert from
+        explode: true
+        in: query
+        name: long_from
+        required: false
+        schema:
+          example: -118.691916
+          format: float
+          type: number
+        style: form
+      - description: latitude to convert to
+        explode: true
+        in: query
+        name: lat_to
+        required: false
+        schema:
+          example: 53.473682
+          format: float
+          type: number
+        style: form
+      - description: longitude to convert to
+        explode: true
+        in: query
+        name: long_to
+        required: false
+        schema:
+          example: -77.397706
+          format: float
+          type: number
+        style: form
+      - description: location to convert from
+        explode: true
+        in: query
+        name: location_from
+        required: false
+        schema:
+          example: "New York, USA"
+          type: string
+        style: form
+      - description: location to convert to
+        explode: true
+        in: query
+        name: location_to
+        required: false
+        schema:
+          example: "Lahore, Pakistan"
+          type: string
+        style: form
+      - description: location to convert from
+        explode: true
+        in: query
+        name: icao_from
+        required: false
+        schema:
+          example: YSSY
+          type: string
+        style: form
+      - description: location to convert to
+        explode: true
+        in: query
+        name: icao_to
+        required: false
+        schema:
+          example: ZBAA
+          type: string
+        style: form
+      - description: location to convert from
+        explode: true
+        in: query
+        name: iata_from
+        required: false
+        schema:
+          example: DXB
+          type: string
+        style: form
+      - description: location to convert to
+        explode: true
+        in: query
+        name: iata_to
+        required: false
+        schema:
+          example: LHR
+          type: string
+        style: form
+      - description: location to convert from
+        explode: true
+        in: query
+        name: locode_from
+        required: false
+        schema:
+          example: PKISB
+          type: string
+        style: form
+      - description: location to convert to
+        explode: true
+        in: query
+        name: locode_to
+        required: false
+        schema:
+          example: USNYC
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeConversionResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/TimeConversionXMLResponse'
+          description: Successful response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Bad Request – Possible reasons include:\n  - If one of the\
+            \ query paramters tz_from and tz_to is provided and other is missing,\
+            \ for time conversion.\n\n  - If one of the query paramters location_from\
+            \ and location_to is provided and other is missing, for time conversion.\n\
+            \  \n  - If one of the query paramters lat_from, long_from, lat_to, and\
+            \ long_to is provided and other(s) is/are missing, for time conversion.\n\
+            \  \n  - If the location address provided to one of the paramters location_from\
+            \ and location_to is invalid, for time conversion. City or state level\
+            \ address must be provided.\n  \n  - If the geographic coordinates provided\
+            \ to one of the paramters lat_from, long_from, lat_to, and long_to is/are\
+            \ not numbers, or the values fall outside the acceptable latitude and\
+            \ longitude ranges. The valid range for latitude is between -90 and 90,\
+            \ and for longitude, it is between -180 and 180.\n  \n  - If the time\
+            \ zone names provided to one of the paramters tz_from and tz_to is/are\
+            \ wrong or not registered in the IANA time zone database.\n  \n  - If\
+            \ none of the query parameter combination is provided for time conversion.\
+            \ tz_from and tz_to or location_from and location_to or lat_from, long_from,\
+            \ lat_to, long_to combination must be provided.\n"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Unauthorized – Possible reasons include:
+              - Missing or invalid API key
+              - Account unverified, locked, or disabled
+              - Accessing API with an unauthorized key
+              - Subscription expired or downgraded
+              - If your account has been disabled or locked to use by the admin due to abuse or illegal activity.
+              - When the request to IP Geolocation API is made using API key for a database subscription
+              - When the request to IP Geolocation API is made on the 'paused' subscription.
+              - If you’re making API requests after your subscription trial has been expired.
+              - If your active until date has passed and you need to upgrade your account.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Not Found – Possible reasons include:\n  - If the IPv4, IPv6,\
+            \ or domain name does not not exists in our database.\n\n  - If the IPv4,\
+            \ IPv6, or domain name is passed as a path variable, instead of url parameter\
+            \ as ip=.\n  \n  - If the location address provided to the request paramters\
+            \ location is invalid. City or state level address must be provided.\n\
+            \  \n  - If the provided ICAO code to the request paramter icao_code is\
+            \ not in the format as four letter code AAAA.\n  \n  - If the provided\
+            \ UN/LOCODE, IATA code or ICAO code to the query paramters lo_code, iata_code,\
+            \ or icao_code does not exists in our database.\n  \n  - If the wrong\
+            \ endpoint is called, that does not exists in our API.\n"
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Method Not Allowed – Only GET is allowed for `/timezone/convert`
+            endpoint
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Too Many Requests – Possible reasons include:\n  - If the\
+            \ API usage limit has reached for the free subscriptions, or paid subscriptions\
+            \ with the status 'past due', 'deleted' or 'trial expired'.\n\n  - If\
+            \ the surcharge API usage limit has reached against the subscribed plan.\n\
+            \  \n"
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      tags:
+      - Time Conversion
+  /user-agent:
+    get:
+      description: |
+        User Agent Parser API provides the accurate browser, device, and operating system
+        details from a User Agent String. It also provides information about crawlers and attack sources. You can use these details to customize user experience, prevent crawlers and attackers from accessing your website.
+      operationId: getUserAgentDetails
+      parameters:
+      - explode: false
+        in: header
+        name: User-Agent
+        required: false
+        schema:
+          example: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9\
+            \ (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9"
+          type: string
+        style: simple
+      - description: Desired output format (json or xml).
+        explode: true
+        in: query
+        name: output
+        required: false
+        schema:
+          example: json
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAgentData'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/UserAgentXMLData'
+          description: successful response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Bad Request – Possible reasons include:
+              - If the user-agent string is empty/null.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Unauthorized – Possible reasons include:
+              - If API key (as apiKey URL parameter) is missing from the request to User Agent API.
+
+              - If the provided API key is not valid.
+              - If your account has been disabled or locked by admin because of any illegal activity.
+              - If you’re making requests after your subscription trial has been expired.
+              - If you’ve exceeded your requests limit.
+              - If your subscription is paused or is not active.
+              - If you’re accessing a paid feature on free subscription.
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: If wrong HTTP request method is used for calling the endpoints.
+            Only GET and POST methods are allowed.
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Too Many Requests – API usage limits exceeded for current plan
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      summary: Get details of user-agent
+      tags:
+      - User Agent
+    post:
+      description: You can also provide custom User-Agent string to parse in JSON
+        payload. This endpoint is meant to be called from server-side and is available
+        for paid subscriptions only.
+      operationId: parseUserAgentString
+      parameters:
+      - description: Desired output format (json or xml).
+        explode: true
+        in: query
+        name: output
+        required: false
+        schema:
+          example: json
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/parseUserAgentString_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAgentData'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/UserAgentXMLData'
+          description: Successful request
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Bad Request – Possible reasons include:
+              - If the user-agent string is empty/null.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Unauthorized – Possible reasons include:
+              - If API key (as apiKey URL parameter) is missing from the request to User Agent API.
+
+              - If the provided API key is not valid.
+              - If your account has been disabled or locked by admin because of any illegal activity.
+              - If you’re making requests after your subscription trial has been expired.
+              - If you’ve exceeded your requests limit.
+              - If your subscription is paused or is not active.
+              - If you’re accessing a paid feature on free subscription.
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: If wrong HTTP request method is used for calling the endpoints.
+            Only POST Method is acceptable for this endpoint
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Too Many Requests – API usage limits exceeded for current plan
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      summary: Handle single User-Agent string
+      tags:
+      - User Agent
+  /user-agent-bulk:
+    post:
+      description: "This endpoint allows you to perform the parsing of multiple User-Angent\
+        \ strings (max. 50,000) at the same time. The requests count per round is\
+        \ equal to total User-Agent strings passed. This feature is `only available\
+        \ for paid plans`."
+      operationId: parseBulkUserAgentStrings
+      parameters:
+      - description: Desired output format (json or xml).
+        explode: true
+        in: query
+        name: output
+        required: false
+        schema:
+          example: json
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/parseBulkUserAgentStrings_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/UserAgentData'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/UserAgentXMLDataArray'
+                type: array
+                xml:
+                  name: ArrayList
+                  wrapped: true
+          description: Success
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Bad Request – Possible reasons include:
+              - If the user-agent string is empty/null.
+              - If the User Agent Strings JSON list is empty, or the provided JSON does not have 'uaStrings' field while querying /user-agent-bulk endpoint.
+              - If more than 50,000 user agent strings are provided while quering from /user-agent-bulk endpoint.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Unauthorized – Possible reasons include:
+              - If API key (as apiKey URL parameter) is missing from the request to User Agent API.
+
+              - If the provided API key is not valid.
+              - If your account has been disabled or locked by admin because of any illegal activity.
+              - If you’re making requests after your subscription trial has been expired.
+              - If you’ve exceeded your requests limit.
+              - If your subscription is paused or is not active.
+              - If you’re accessing a paid feature on free subscription.
+              - If bulk user agent parsing endpoint is called using free subscription API key.
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: If wrong HTTP request method is used for calling the endpoints.
+            Only POST method is allowed.
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Too Many Requests – API usage limits exceeded for current plan
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      summary: Handle multiple user-agent string lookups
+      tags:
+      - User Agent
+  /astronomy:
+    get:
+      description: |
+        The Astronomy API provides the location-based rise and set times for the Sun and Moon along with the current position, distance from earth, and azimuth of the Sun and the Moon for a specific date at the queried time.
+      operationId: getAstronomyDetails
+      parameters:
+      - description: "query paramter 'ip'. If not provided, will be your network IP"
+        explode: true
+        in: query
+        name: ip
+        required: false
+        schema:
+          example: 8.8.8.8
+          type: string
+        style: form
+      - description: "query paramter 'location'. If not provided, will be your ip\
+          \ location"
+        explode: true
+        in: query
+        name: location
+        required: false
+        schema:
+          example: "New York, US"
+          type: string
+        style: form
+      - description: query paramter 'lat'.
+        explode: true
+        in: query
+        name: lat
+        required: false
+        schema:
+          example: "40.76473"
+          type: string
+        style: form
+      - description: query paramter 'long'.
+        explode: true
+        in: query
+        name: long
+        required: false
+        schema:
+          example: "-74.00084"
+          type: string
+        style: form
+      - description: The date (YYYY-MM-DD) to lookup for. default will be the current
+          date
+        explode: true
+        in: query
+        name: date
+        required: false
+        schema:
+          example: 2025-04-22
+          type: string
+        style: form
+      - description: query parameter 'elevation'
+        explode: true
+        in: query
+        name: elevation
+        required: false
+        schema:
+          example: 9
+          format: double
+          maximum: 10000
+          minimum: 0
+          type: number
+        style: form
+      - description: Desired output format.
+        explode: true
+        in: query
+        name: output
+        required: false
+        schema:
+          example: json
+          type: string
+        style: form
+      - description: "By default, the API responds in English. You can change the\
+          \ response language by passing the language code as a query parameter `lang`.\
+          \ Multi language feature is available only for `paid users`."
+        explode: true
+        in: query
+        name: lang
+        required: false
+        schema:
+          enum:
+          - en
+          - de
+          - ru
+          - ja
+          - fr
+          - cn
+          - es
+          - cs
+          - it
+          - ko
+          - fa
+          - pt
+          example: en
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AstronomyResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/AstronomyXMLResponse'
+          description: Successful response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Bad Request – Possible reasons include:
+              - Invalid or not found location/address
+              - Special characters in API key or value
+              - Invalid date format (expected: yyyy-MM-dd)
+              - IP not found in the database
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Unauthorized – Possible reasons include:
+              - Missing or invalid API key
+              - Account unverified, locked, or disabled
+              - Accessing API with an unauthorized key
+              - Subscription expired or downgraded
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Method Not Allowed – Only GET is allowed for `/astronomy` endpoint
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Too Many Requests – API usage limits exceeded for current plan
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      tags:
+      - Astronomy
+  /asn:
+    get:
+      description: "ASN API provides comprehensive details for an ASN including the\
+        \ as name, \norganization name, the country of registration, associated domain,\
+        \ and its \ntype (ISP, host provider, or business). The API also shows the\
+        \ allocation \ndate of provided ASN and if it is currently allocated or not.\
+        \ It also contains \nthe routing information including peering, upstreams,\
+        \ and downstreams to help \nunderstand the relationship between different\
+        \ ASNs.\n\nExample Use Cases:\n\n- Looking up ASN information for an IP address\
+        \ (e.g., `GET /asn?ip=8.8.8.8`)\n\n- Retrieving ASN information for a specific\
+        \ ASN number (e.g., `GET /asn?asn=12345`)\n\n- Getting peering relationships\
+        \ for an ASN (e.g., `GET /asn?asn=12345&include=peers`)\n"
+      operationId: getAsnInfo
+      parameters:
+      - description: query parameter 'ip'.
+        explode: true
+        in: query
+        name: ip
+        required: false
+        schema:
+          example: 8.8.8.8
+          type: string
+        style: form
+      - description: query paramter 'asn'.
+        explode: true
+        in: query
+        name: asn
+        required: false
+        schema:
+          example: 1
+          type: integer
+        style: form
+      - description: "This parameter can have four options: a) peers b) downstreams\
+          \ c) upstreams d) routes e) whois_response. You may add any of them in comma-separated\
+          \ way. In order to get the ASN details with peering data, pass peers string\
+          \ in the include parameter like mentioned below."
+        explode: true
+        in: query
+        name: include
+        required: false
+        schema:
+          example: peers
+          type: string
+        style: form
+      - description: "You can exclude fields from the response according to you requirement\
+          \ with the exception of ip field. For example, you want to remove date_allocated\
+          \ and allocation_status from api response, you can put the keys in excludes\
+          \ parameter like this."
+        explode: true
+        in: query
+        name: excludes
+        required: false
+        schema:
+          example: "asn.date_allocated,asn.allocation_status"
+          type: string
+        style: form
+      - description: "You can filter out only those fields which you want to see in\
+          \ the response by using the fields parameter. To retrieve only the AS organization,\
+          \ its country and downstreams in api response, you can put the keys in fields\
+          \ parameter like this. API will combine these fields with the default ASN\
+          \ response. Note: Parameters `peers, downstreams, upstreams, routes, whois_response`\
+          \ can be used in both `include` , and `fields`. If you use include and fields\
+          \ at the same time, fields parameter will be considered only."
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          example: "asn.organization,asn.country,asn.downstreams"
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ASNResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ASNResponseXML'
+          description: Successful response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Bad Request – Possible reasons include:\n  - If the provided\
+            \ IPv4, IPv6 address, or ASN is invalid.\n\n  - If special character(s)\
+            \ ( ) [ ] { } | ^ ` is passed in the API URL either as paramter or its\
+            \ value. Specially in case of API key.\n  \n  \n"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Unauthorized – Possible reasons include:
+              - Missing or invalid API key
+              - Account unverified, locked, or disabled
+              - Accessing API with an unauthorized key
+              - Subscription expired or downgraded
+              - If your account has been disabled or locked to use by the admin due to abuse or illegal activity.
+              - When the request to IP ASN API is made using API key for a database subscription
+              - When the request to IP ASN API is made on the 'paused' subscription.
+              - If you’re making API requests after your subscription trial has been expired.
+              - If your active until date has passed and you need to upgrade your account.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Not Found – Possible reasons include:\n  - If the IPv4, IPv6,\
+            \ or ASN name does not exist in our database.\n\n  - If the IPv4, IPv6,\
+            \ or ASN  is passed as a path variable, instead of url parameter as ip=.\n\
+            \  \n  - If the wrong endpoint is called, that does not exist in our API.\n"
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Method Not Allowed – Only GET is allowed for `/asn` endpoint
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Too Many Requests – Possible reasons include:\n  - If the\
+            \ API usage limit has reached for the free subscriptions, or paid subscriptions\
+            \ with the status 'past due', 'deleted' or 'trial expired'.\n\n  - If\
+            \ the surcharge API usage limit has reached against the subscribed plan.\n\
+            \  \n"
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      tags:
+      - ASN Lookup
+  /abuse:
+    get:
+      description: |
+        The Abuse Contact API provides essential contact information to report abusive activity associated with IP addresses. By querying an IP address (IPv4 or IPv6), users receive detailed abuse contact data, including the responsible organization, abuse handling role, contact emails, phone numbers, and registered address. This enables users to swiftly take action to report and mitigate threats such as spam, DDoS attacks, and phishing.
+
+           In addition to abuse-specific contacts, the API also includes registration metadata like the registered country and abuse handle. This empowers cybersecurity teams, hosting providers, and compliance entities to take appropriate legal or administrative action.
+      operationId: getAbuseContactInfo
+      parameters:
+      - description: query parameter 'ip'.
+        explode: true
+        in: query
+        name: ip
+        required: false
+        schema:
+          example: 8.8.8.8
+          type: string
+        style: form
+      - description: "You can exclude specific fields from the API response (except\
+          \ the ip field) by listing them in the excludes parameter as a comma-separated\
+          \ list. For example, you want to remove emails and handle from api response,\
+          \ you can put the keys in excludes parameter like this."
+        explode: true
+        in: query
+        name: excludes
+        required: false
+        schema:
+          example: "abuse.handle,abuse.emails"
+          type: string
+        style: form
+      - description: "You can customize the API response by using the fields parameter\
+          \ to include only the specific data you need. For example, to retrieve only\
+          \ the role and emails, specify these keys in the fields parameter as shown\
+          \ below."
+        explode: true
+        in: query
+        name: fields
+        required: false
+        schema:
+          example: "abuse.role,abuse.emails"
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbuseResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/AbuseResponseXML'
+          description: Successful response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Bad Request – Possible reasons include:\n  - If the provided\
+            \ IPv4, IPv6 address, or ASN is invalid.\n\n  - If special character(s)\
+            \ ( ) [ ] { } | ^ ` is passed in the API URL either as paramter or its\
+            \ value. Specially in case of API key.\n  \n  \n"
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: |
+            Unauthorized – Possible reasons include:
+              - Missing or invalid API key
+              - Account unverified, locked, or disabled
+              - Accessing API with an unauthorized key
+              - Subscription expired or downgraded
+              - If your account has been disabled or locked to use by the admin due to abuse or illegal activity.
+              - When the request to IP Abuse Contact API is made using API key for a database subscription
+              - When the request to IP Abuse Contact API is made on the 'paused' subscription.
+              - If you’re making API requests after your subscription trial has been expired.
+              - If your active until date has passed and you need to upgrade your account.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Not Found – Possible reasons include:\n  - If the IPv4, IPv6,\
+            \ or ASN name does not exist in our database.\n\n  - If the IPv4, IPv6,\
+            \ or ASN  is passed as a path variable, instead of url parameter as ip=.\n\
+            \  \n  - If the wrong endpoint is called, that does not exist in our API.\n"
+        "405":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Method Not Allowed – Only GET is allowed for `/abuse` endpoint
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: "Too Many Requests – Possible reasons include:\n  - If the\
+            \ API usage limit has reached for the free subscriptions, or paid subscriptions\
+            \ with the status 'past due', 'deleted' or 'trial expired'.\n\n  - If\
+            \ the surcharge API usage limit has reached against the subscribed plan.\n\
+            \  \n"
+        "499":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Client Closed Request – Client terminated connection before
+            completion
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ErrorXMLResponse'
+          description: Internal Server Error – Something went wrong on our end
+      security:
+      - ApiKeyAuth: []
+      - {}
+      tags:
+      - Abuse Contact
+components:
+  schemas:
+    GeolocationResponse:
+      example:
+        hostname: dns.google
+        security:
+          is_cloud_provider: false
+          is_spam: false
+          is_known_attacker: true
+          is_anonymous: true
+          proxy_provider: ""
+          cloud_provider: ""
+          is_tor: false
+          is_bot: false
+          threat_score: 80
+          is_proxy: true
+          proxy_type: VPN
+        abuse:
+          emails:
+          - network-abuse@google.com
+          country: US
+          phone_numbers:
+          - +1-650-253-0000
+          route: 8.8.8.0/24
+          role: abuse
+          address: |-
+            1600 Amphitheatre Parkway
+            Mountain View
+            CA
+            94043
+            United States
+          kind: group
+          organization: Abuse
+          name: Abuse
+          handle: ABUSE5250-ARIN
+        ip: 8.8.8.8
+        domain: google.com
+        location:
+          continent_name: North America
+          country_emoji: ""
+          city: Mountain View
+          latitude: "37.42240"
+          locality: Mountain View
+          continent_code: NA
+          accuracy_radius: "1000"
+          geoname_id: "6301403"
+          zipcode: 94043-1351
+          district: Santa Clara
+          country_code2: US
+          country_name: United States
+          is_eu: false
+          dma_code: "807"
+          country_code3: USA
+          country_name_official: United States of America
+          state_prov: California
+          country_capital: "Washington, D.C."
+          state_code: US-CA
+          country_flag: https://ipgeolocation.io/static/flags/us_64.png
+          longitude: "-122.08421"
+        currency:
+          symbol: $
+          code: USD
+          name: US Dollar
+        time_zone:
+          offset: -8
+          offset_with_dst: -7
+          dst_start:
+            duration: +1H
+            overlap: false
+            utc_time: 2025-03-09 TIME 10
+            gap: true
+            date_time_after: 2025-03-09 TIME 03
+            date_time_before: 2025-03-09 TIME 02
+          dst_savings: 1
+          name: America/Los_Angeles
+          current_time_unix: 1745327980.951
+          dst_exists: true
+          dst_end:
+            duration: -1H
+            overlap: true
+            utc_time: 2025-11-02 TIME 09
+            gap: false
+            date_time_after: 2025-11-02 TIME 01
+            date_time_before: 2025-11-02 TIME 02
+          current_time: 2025-04-22 06:19:40.951-0700
+          is_dst: true
+        country_metadata:
+          calling_code: "+1"
+          languages:
+          - en-US
+          - es-US
+          - haw
+          - fr
+          tld: .us
+        user_agent:
+          user_agent_string: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9\
+            \ (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9"
+          name: Safari
+          type: Browser
+          version: 9.0.2
+          version_major: "9"
+          device:
+            name: Apple Macintosh
+            type: Desktop
+            brand: Apple
+            cpu: Intel
+          engine:
+            name: AppleWebKit
+            type: Browser
+            version: 601.3.9
+            version_major: "601"
+          operating_system:
+            name: Mac OS
+            type: Desktop
+            version: 10.11.2
+            version_major: "10.11"
+            build: ??
+        network:
+          connection_type: wired
+          company:
+            domain: google.com
+            name: Google LLC
+            type: hosting
+          asn:
+            country: US
+            num_of_ipv4_routes: "1099"
+            organization: Google LLC
+            domain: about.google
+            as_number: AS15169
+            allocation_status: Assigned
+            num_of_ipv6_routes: "107"
+            rir: ARIN
+            type: isp
+            date_allocated: ""
+            asn_name: GOOGLE
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+        hostname:
+          example: dns.google
+          type: string
+        domain:
+          example: google.com
+          type: string
+        location:
+          $ref: '#/components/schemas/Location'
+        country_metadata:
+          $ref: '#/components/schemas/CountryMetadata'
+        network:
+          $ref: '#/components/schemas/Network'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        security:
+          $ref: '#/components/schemas/Security'
+        abuse:
+          $ref: '#/components/schemas/Abuse'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        user_agent:
+          $ref: '#/components/schemas/UserAgentData'
+      type: object
+    GeolocationXMLResponse:
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+          xml:
+            name: ip
+        hostname:
+          example: dns.google
+          type: string
+          xml:
+            name: hostname
+        domain:
+          example: google.com
+          type: string
+          xml:
+            name: domain
+        location:
+          $ref: '#/components/schemas/Location'
+        country_metadata:
+          $ref: '#/components/schemas/CountryMetadata'
+        network:
+          $ref: '#/components/schemas/Network'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        security:
+          $ref: '#/components/schemas/Security'
+        abuse:
+          $ref: '#/components/schemas/Abuse'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        user_agent:
+          $ref: '#/components/schemas/UserAgentData'
+      type: object
+      xml:
+        name: LinkedHashMap
+    GeolocationXMLResponseArray:
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+          xml:
+            name: ip
+        hostname:
+          example: dns.google
+          type: string
+          xml:
+            name: hostname
+        domain:
+          example: google.com
+          type: string
+          xml:
+            name: domain
+        location:
+          $ref: '#/components/schemas/Location'
+        country_metadata:
+          $ref: '#/components/schemas/CountryMetadata'
+        network:
+          $ref: '#/components/schemas/Network'
+        currency:
+          $ref: '#/components/schemas/Currency'
+        security:
+          $ref: '#/components/schemas/Security'
+        abuse:
+          $ref: '#/components/schemas/Abuse'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        user_agent:
+          $ref: '#/components/schemas/UserAgentData'
+      type: object
+      xml:
+        name: item
+    SecurityAPIResponse:
+      example:
+        hostname: 195-154-221-54.rev.poneytelecom.eu
+        security:
+          is_cloud_provider: false
+          is_spam: false
+          is_known_attacker: true
+          is_anonymous: true
+          proxy_provider: ""
+          cloud_provider: ""
+          is_tor: false
+          is_bot: false
+          threat_score: 80
+          is_proxy: true
+          proxy_type: VPN
+        ip: 8.8.8.8
+        location:
+          continent_name: North America
+          country_emoji: ""
+          city: Mountain View
+          latitude: "37.42240"
+          continent_code: NA
+          geoname_id: "6301403"
+          zipcode: 94043-1351
+          district: Santa Clara
+          country_code2: US
+          country_name: United States
+          is_eu: false
+          country_code3: USA
+          country_name_official: United States of America
+          state_prov: California
+          country_capital: "Washington, D.C."
+          state_code: US-CA
+          country_flag: https://ipgeolocation.io/static/flags/us_64.png
+          longitude: "-122.08421"
+        currency:
+          symbol: $
+          code: USD
+          name: US Dollar
+        time_zone:
+          offset: -8
+          offset_with_dst: -7
+          dst_start:
+            duration: +1H
+            overlap: false
+            utc_time: 2025-03-09 TIME 10
+            gap: true
+            date_time_after: 2025-03-09 TIME 03
+            date_time_before: 2025-03-09 TIME 02
+          dst_savings: 1
+          name: America/Los_Angeles
+          current_time_unix: 1745327980.951
+          dst_exists: true
+          dst_end:
+            duration: -1H
+            overlap: true
+            utc_time: 2025-11-02 TIME 09
+            gap: false
+            date_time_after: 2025-11-02 TIME 01
+            date_time_before: 2025-11-02 TIME 02
+          current_time: 2025-04-22 06:19:40.951-0700
+          is_dst: true
+        country_metadata:
+          calling_code: "+1"
+          languages:
+          - en-US
+          - es-US
+          - haw
+          - fr
+          tld: .us
+        user_agent:
+          user_agent_string: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9\
+            \ (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9"
+          name: Safari
+          type: Browser
+          version: 9.0.2
+          version_major: "9"
+          device:
+            name: Apple Macintosh
+            type: Desktop
+            brand: Apple
+            cpu: Intel
+          engine:
+            name: AppleWebKit
+            type: Browser
+            version: 601.3.9
+            version_major: "601"
+          operating_system:
+            name: Mac OS
+            type: Desktop
+            version: 10.11.2
+            version_major: "10.11"
+            build: ??
+        network:
+          company:
+            name: Google LLC
+          asn:
+            country: US
+            organization: Google LLC
+            as_number: AS15169
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+        hostname:
+          example: 195-154-221-54.rev.poneytelecom.eu
+          type: string
+        security:
+          $ref: '#/components/schemas/Security'
+        location:
+          $ref: '#/components/schemas/LocationMinimal'
+        network:
+          $ref: '#/components/schemas/NetworkMinimal'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        user_agent:
+          $ref: '#/components/schemas/UserAgentData'
+        country_metadata:
+          $ref: '#/components/schemas/CountryMetadata'
+        currency:
+          $ref: '#/components/schemas/Currency'
+      type: object
+    SecurityAPIXMLResponse:
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+          xml:
+            name: ip
+        hostname:
+          example: 195-154-221-54.rev.poneytelecom.eu
+          type: string
+          xml:
+            name: hostname
+        security:
+          $ref: '#/components/schemas/Security'
+        location:
+          $ref: '#/components/schemas/LocationMinimal'
+        network:
+          $ref: '#/components/schemas/NetworkMinimal'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        user_agent:
+          $ref: '#/components/schemas/UserAgentData'
+        country_metadata:
+          $ref: '#/components/schemas/CountryMetadata'
+        currency:
+          $ref: '#/components/schemas/Currency'
+      type: object
+      xml:
+        name: LinkedHashMap
+    SecurityAPIXMLResponseArray:
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+          xml:
+            name: ip
+        hostname:
+          example: 195-154-221-54.rev.poneytelecom.eu
+          type: string
+          xml:
+            name: hostname
+        security:
+          $ref: '#/components/schemas/Security'
+        location:
+          $ref: '#/components/schemas/LocationMinimal'
+        network:
+          $ref: '#/components/schemas/NetworkMinimal'
+        time_zone:
+          $ref: '#/components/schemas/TimeZone'
+        user_agent:
+          $ref: '#/components/schemas/UserAgentData'
+        country_metadata:
+          $ref: '#/components/schemas/CountryMetadata'
+        currency:
+          $ref: '#/components/schemas/Currency'
+      type: object
+      xml:
+        name: item
+    TimeZoneDetailedResponse:
+      example:
+        lo_code_details:
+          country_code: DE
+          city: Berlin
+          latitude: "52.51667"
+          country_name: ""
+          state_code: BE
+          lo_code: DEBER
+          location_type: "Port, Rail Terminal, Road Terminal, Airport, Postal Exchange"
+          longitude: "13.38333"
+        ip: 8.8.8.8
+        airport_details:
+          country_code: US
+          icao_code: KATL
+          iata_code: ATL
+          city: Atlanta
+          faa_code: ""
+          latitude: "33.63670"
+          elevation_ft: 1026
+          name: Hartsfield Jackson Atlanta International Airport
+          continent_code: NA
+          type: large_airport
+          state_code: US-GA
+          longitude: "-84.42810"
+        location:
+          continent_name: Oceania
+          city: Brisbane
+          latitude: "-27.47306"
+          locality: ""
+          continent_code: OC
+          zipcode: "4101"
+          location_string: "Londong, UK"
+          district: South Brisbane
+          country_code2: AU
+          country_name: Australia
+          is_eu: false
+          country_code3: AUS
+          country_name_official: Commonwealth of Australia
+          state_prov: Queensland
+          state_code: AU-QLD
+          longitude: "153.01421"
+        time_zone:
+          date: 2025-04-24
+          week: 17
+          offset: -8
+          offset_with_dst: -7
+          year: 2025
+          year_abbr: "25"
+          date_time: 2025-04-24 11:30:12
+          month: 4
+          dst_start:
+            duration: +1H
+            overlap: true
+            utc_time: 2025-03-09 TIME 10
+            gap: true
+            date_time_after: 2025-03-09 TIME 03
+            date_time_before: 2025-03-09 TIME 02
+          dst_savings: 0
+          name: America/Los_Angeles
+          date_time_wti: "Thu, 24 Apr 2025 11:30:12 -0700"
+          dst_exists: true
+          dst_end:
+            duration: -1H
+            overlap: true
+            utc_time: 2025-11-02 TIME 09
+            gap: true
+            date_time_after: 2025-11-02 TIME 01
+            date_time_before: 2025-11-02 TIME 02
+          date_time_unix: 1745519412.353
+          time_24: "41412"
+          time_12: 11:30:12 AM
+          date_time_txt: "Thursday, April 24, 2025 11:30:12"
+          date_time_ymd: 2000-01-23T04:56:07.000+00:00
+          is_dst: true
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+        airport_details:
+          $ref: '#/components/schemas/TimezoneAirport'
+        lo_code_details:
+          $ref: '#/components/schemas/TimezoneLocode'
+        location:
+          $ref: '#/components/schemas/TimezoneLocation'
+        time_zone:
+          $ref: '#/components/schemas/TimezoneDetail'
+      type: object
+    TimeZoneDetailedXMLResponse:
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+        airport_details:
+          $ref: '#/components/schemas/TimezoneAirport'
+        lo_code_details:
+          $ref: '#/components/schemas/TimezoneLocode'
+        location:
+          $ref: '#/components/schemas/TimezoneLocation'
+        time_zone:
+          $ref: '#/components/schemas/TimezoneDetail'
+      type: object
+      xml:
+        name: LinkedHashMap
+    TimeConversionResponse:
+      example:
+        converted_time: 2000-01-23T04:56:07.000+00:00
+        diff_hour: 7.5
+        diff_min: 450
+        original_time: 2000-01-23T04:56:07.000+00:00
+      properties:
+        original_time:
+          format: date-time
+          type: string
+        converted_time:
+          format: date-time
+          type: string
+        diff_hour:
+          example: 7.5
+          format: float
+          type: number
+        diff_min:
+          example: 450
+          type: integer
+      type: object
+    TimeConversionXMLResponse:
+      properties:
+        original_time:
+          example: 2024-12-08 11:00
+          type: string
+        converted_time:
+          example: 2024-12-08 18:30:00
+          type: string
+        diff_hour:
+          example: 7.5
+          format: float
+          type: number
+        diff_min:
+          example: 450
+          type: integer
+      type: object
+      xml:
+        name: LinkedHashMap
+    UserAgentData:
+      example:
+        user_agent_string: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9\
+          \ (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9"
+        name: Safari
+        type: Browser
+        version: 9.0.2
+        version_major: "9"
+        device:
+          name: Apple Macintosh
+          type: Desktop
+          brand: Apple
+          cpu: Intel
+        engine:
+          name: AppleWebKit
+          type: Browser
+          version: 601.3.9
+          version_major: "601"
+        operating_system:
+          name: Mac OS
+          type: Desktop
+          version: 10.11.2
+          version_major: "10.11"
+          build: ??
+      properties:
+        user_agent_string:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+        version_major:
+          type: string
+        device:
+          $ref: '#/components/schemas/UserAgentData_device'
+        engine:
+          $ref: '#/components/schemas/UserAgentData_engine'
+        operating_system:
+          $ref: '#/components/schemas/UserAgentData_operating_system'
+      type: object
+    UserAgentXMLData:
+      example:
+        user_agent_string: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2)...
+        name: Safari
+        type: Browser
+        version: 9.0.2
+        version_major: "9"
+        device:
+          name: Apple Macintosh
+          type: Desktop
+          brand: Apple
+          cpu: Intel
+        engine:
+          name: AppleWebKit
+          type: Browser
+          version: 601.3.9
+          version_major: "601"
+        operating_system:
+          name: Mac OS
+          type: Desktop
+          version: 10.11.2
+          version_major: "10.11"
+          build: ??
+      properties:
+        user_agent_string:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+        version_major:
+          type: string
+        device:
+          $ref: '#/components/schemas/UserAgentData_device'
+        engine:
+          $ref: '#/components/schemas/UserAgentData_engine'
+        operating_system:
+          $ref: '#/components/schemas/UserAgentData_operating_system'
+      type: object
+      xml:
+        name: LinkedHashMap
+        wrapped: true
+    UserAgentXMLDataArray:
+      example:
+        user_agent_string: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2)...
+        name: Safari
+        type: Browser
+        version: 9.0.2
+        version_major: "9"
+        device:
+          name: Apple Macintosh
+          type: Desktop
+          brand: Apple
+          cpu: Intel
+        engine:
+          name: AppleWebKit
+          type: Browser
+          version: 601.3.9
+          version_major: "601"
+        operating_system:
+          name: Mac OS
+          type: Desktop
+          version: 10.11.2
+          version_major: "10.11"
+          build: ??
+      properties:
+        user_agent_string:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+        version_major:
+          type: string
+        device:
+          $ref: '#/components/schemas/UserAgentData_device'
+        engine:
+          $ref: '#/components/schemas/UserAgentData_engine'
+        operating_system:
+          $ref: '#/components/schemas/UserAgentData_operating_system'
+      type: object
+      xml:
+        name: item
+        wrapped: true
+    AstronomyResponse:
+      example:
+        ip: 8.8.8.8
+        location:
+          continent_name: Oceania
+          elevation: "36.6"
+          city: Brisbane
+          latitude: "-27.47306"
+          locality: ""
+          continent_code: OC
+          zipcode: "4101"
+          location_string: "Londong, UK"
+          district: South Brisbane
+          country_code2: AU
+          country_name: Australia
+          is_eu: false
+          country_code3: AUS
+          country_name_official: Commonwealth of Australia
+          state_prov: Queensland
+          state_code: AU-QLD
+          longitude: "153.01421"
+        astronomy:
+          date: 2025-07-17
+          moonset: 13:04
+          sunrise: 05:39
+          solar_noon: 13:02
+          moon_phase: LAST_QUARTER
+          sun_status: "-"
+          sun_azimuth: 82.93803947255543
+          moon_status: "-"
+          moon_parallactic_angle: 32.4113797557535
+          night_end: 03:40
+          moon_illumination_percentage: "-55.99"
+          current_time: 08:03:36.532
+          sun_altitude: 24.957683470850487
+          day_length: 14:45
+          mid_night: 01:02
+          night_begin: 22:23
+          moonrise: -:-
+          moon_distance: 371690.2207058187
+          moon_azimuth: 224.27457358894264
+          morning:
+            astronomical_twilight_end: 04:27
+            blue_hour_end: 05:20
+            astronomical_twilight_begin: 03:40
+            golden_hour_end: 06:19
+            golden_hour_begin: 05:20
+            nautical_twilight_end: 05:07
+            civil_twilight_end: 05:39
+            blue_hour_begin: 04:54
+            civil_twilight_begin: 05:07
+            nautical_twilight_begin: 04:27
+          sun_distance: 152059278.3394745
+          moon_altitude: 50.865120808868284
+          sunset: 20:24
+          evening:
+            blue_hour_end: 21:09
+            astronomical_twilight_end: 22:23
+            astronomical_twilight_begin: 21:37
+            golden_hour_end: 20:44
+            golden_hour_begin: 19:44
+            blue_hour_begin: 20:44
+            civil_twilight_end: 20:56
+            nautical_twilight_end: 21:37
+            civil_twilight_begin: 20:24
+            nautical_twilight_begin: 20:56
+          moon_angle: 263.11859022190265
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+        location:
+          $ref: '#/components/schemas/AstronomyLocation'
+        astronomy:
+          $ref: '#/components/schemas/Astronomy'
+      type: object
+    AstronomyXMLResponse:
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+        location:
+          $ref: '#/components/schemas/TimezoneLocation'
+        astronomy:
+          $ref: '#/components/schemas/Astronomy'
+      type: object
+      xml:
+        name: LinkedHashMap
+    Location:
+      example:
+        continent_name: North America
+        country_emoji: ""
+        city: Mountain View
+        latitude: "37.42240"
+        locality: Mountain View
+        continent_code: NA
+        accuracy_radius: "1000"
+        geoname_id: "6301403"
+        zipcode: 94043-1351
+        district: Santa Clara
+        country_code2: US
+        country_name: United States
+        is_eu: false
+        dma_code: "807"
+        country_code3: USA
+        country_name_official: United States of America
+        state_prov: California
+        country_capital: "Washington, D.C."
+        state_code: US-CA
+        country_flag: https://ipgeolocation.io/static/flags/us_64.png
+        longitude: "-122.08421"
+      properties:
+        continent_code:
+          example: NA
+          type: string
+        continent_name:
+          example: North America
+          type: string
+        country_code2:
+          example: US
+          type: string
+        country_code3:
+          example: USA
+          type: string
+        country_name:
+          example: United States
+          type: string
+        country_name_official:
+          example: United States of America
+          type: string
+        country_capital:
+          example: "Washington, D.C."
+          type: string
+        state_prov:
+          example: California
+          type: string
+        state_code:
+          example: US-CA
+          type: string
+        district:
+          example: Santa Clara
+          type: string
+        city:
+          example: Mountain View
+          type: string
+        zipcode:
+          example: 94043-1351
+          type: string
+        latitude:
+          example: "37.42240"
+          type: string
+        longitude:
+          example: "-122.08421"
+          type: string
+        is_eu:
+          example: false
+          type: boolean
+        country_flag:
+          example: https://ipgeolocation.io/static/flags/us_64.png
+          type: string
+        geoname_id:
+          example: "6301403"
+          type: string
+        country_emoji:
+          example: ""
+          type: string
+        accuracy_radius:
+          example: "1000"
+          type: string
+        locality:
+          example: Mountain View
+          type: string
+        dma_code:
+          example: "807"
+          type: string
+      type: object
+    LocationMinimal:
+      example:
+        continent_name: North America
+        country_emoji: ""
+        city: Mountain View
+        latitude: "37.42240"
+        continent_code: NA
+        geoname_id: "6301403"
+        zipcode: 94043-1351
+        district: Santa Clara
+        country_code2: US
+        country_name: United States
+        is_eu: false
+        country_code3: USA
+        country_name_official: United States of America
+        state_prov: California
+        country_capital: "Washington, D.C."
+        state_code: US-CA
+        country_flag: https://ipgeolocation.io/static/flags/us_64.png
+        longitude: "-122.08421"
+      properties:
+        continent_code:
+          example: NA
+          type: string
+        continent_name:
+          example: North America
+          type: string
+        country_code2:
+          example: US
+          type: string
+        country_code3:
+          example: USA
+          type: string
+        country_name:
+          example: United States
+          type: string
+        country_name_official:
+          example: United States of America
+          type: string
+        country_capital:
+          example: "Washington, D.C."
+          type: string
+        state_prov:
+          example: California
+          type: string
+        state_code:
+          example: US-CA
+          type: string
+        district:
+          example: Santa Clara
+          type: string
+        city:
+          example: Mountain View
+          type: string
+        zipcode:
+          example: 94043-1351
+          type: string
+        latitude:
+          example: "37.42240"
+          type: string
+        longitude:
+          example: "-122.08421"
+          type: string
+        is_eu:
+          example: false
+          type: boolean
+        country_flag:
+          example: https://ipgeolocation.io/static/flags/us_64.png
+          type: string
+        geoname_id:
+          example: "6301403"
+          type: string
+        country_emoji:
+          example: ""
+          type: string
+      type: object
+    Security:
+      example:
+        is_cloud_provider: false
+        is_spam: false
+        is_known_attacker: true
+        is_anonymous: true
+        proxy_provider: ""
+        cloud_provider: ""
+        is_tor: false
+        is_bot: false
+        threat_score: 80
+        is_proxy: true
+        proxy_type: VPN
+      properties:
+        threat_score:
+          example: 80
+          type: integer
+        is_tor:
+          example: false
+          type: boolean
+        is_proxy:
+          example: true
+          type: boolean
+        proxy_type:
+          example: VPN
+          type: string
+        proxy_provider:
+          example: ""
+          type: string
+        is_anonymous:
+          example: true
+          type: boolean
+        is_known_attacker:
+          example: true
+          type: boolean
+        is_spam:
+          example: false
+          type: boolean
+        is_bot:
+          example: false
+          type: boolean
+        is_cloud_provider:
+          example: false
+          type: boolean
+        cloud_provider:
+          example: ""
+          type: string
+      type: object
+    Network:
+      example:
+        connection_type: wired
+        company:
+          domain: google.com
+          name: Google LLC
+          type: hosting
+        asn:
+          country: US
+          num_of_ipv4_routes: "1099"
+          organization: Google LLC
+          domain: about.google
+          as_number: AS15169
+          allocation_status: Assigned
+          num_of_ipv6_routes: "107"
+          rir: ARIN
+          type: isp
+          date_allocated: ""
+          asn_name: GOOGLE
+      properties:
+        asn:
+          $ref: '#/components/schemas/Network_asn'
+        connection_type:
+          example: wired
+          type: string
+        company:
+          $ref: '#/components/schemas/Network_company'
+      type: object
+    NetworkMinimal:
+      example:
+        company:
+          name: Google LLC
+        asn:
+          country: US
+          organization: Google LLC
+          as_number: AS15169
+      properties:
+        asn:
+          $ref: '#/components/schemas/NetworkMinimal_asn'
+        company:
+          $ref: '#/components/schemas/NetworkMinimal_company'
+      type: object
+    CountryMetadata:
+      example:
+        calling_code: "+1"
+        languages:
+        - en-US
+        - es-US
+        - haw
+        - fr
+        tld: .us
+      properties:
+        calling_code:
+          example: "+1"
+          type: string
+        tld:
+          example: .us
+          type: string
+        languages:
+          example:
+          - en-US
+          - es-US
+          - haw
+          - fr
+          items:
+            type: string
+          type: array
+      type: object
+    Abuse:
+      example:
+        emails:
+        - network-abuse@google.com
+        country: US
+        phone_numbers:
+        - +1-650-253-0000
+        route: 8.8.8.0/24
+        role: abuse
+        address: |-
+          1600 Amphitheatre Parkway
+          Mountain View
+          CA
+          94043
+          United States
+        kind: group
+        organization: Abuse
+        name: Abuse
+        handle: ABUSE5250-ARIN
+      properties:
+        route:
+          example: 8.8.8.0/24
+          type: string
+        country:
+          example: US
+          type: string
+        handle:
+          example: ABUSE5250-ARIN
+          type: string
+        name:
+          example: Abuse
+          type: string
+        organization:
+          example: Abuse
+          type: string
+        role:
+          example: abuse
+          type: string
+        kind:
+          example: group
+          type: string
+        address:
+          example: |-
+            1600 Amphitheatre Parkway
+            Mountain View
+            CA
+            94043
+            United States
+          type: string
+        emails:
+          example:
+          - network-abuse@google.com
+          items:
+            type: string
+          type: array
+        phone_numbers:
+          example:
+          - +1-650-253-0000
+          items:
+            type: string
+          type: array
+      type: object
+    Currency:
+      example:
+        symbol: $
+        code: USD
+        name: US Dollar
+      properties:
+        code:
+          example: USD
+          type: string
+        name:
+          example: US Dollar
+          type: string
+        symbol:
+          example: $
+          type: string
+      type: object
+    TimeZone:
+      example:
+        offset: -8
+        offset_with_dst: -7
+        dst_start:
+          duration: +1H
+          overlap: false
+          utc_time: 2025-03-09 TIME 10
+          gap: true
+          date_time_after: 2025-03-09 TIME 03
+          date_time_before: 2025-03-09 TIME 02
+        dst_savings: 1
+        name: America/Los_Angeles
+        current_time_unix: 1745327980.951
+        dst_exists: true
+        dst_end:
+          duration: -1H
+          overlap: true
+          utc_time: 2025-11-02 TIME 09
+          gap: false
+          date_time_after: 2025-11-02 TIME 01
+          date_time_before: 2025-11-02 TIME 02
+        current_time: 2025-04-22 06:19:40.951-0700
+        is_dst: true
+      properties:
+        name:
+          example: America/Los_Angeles
+          type: string
+        offset:
+          example: -8
+          type: integer
+        offset_with_dst:
+          example: -7
+          type: integer
+        current_time:
+          example: 2025-04-22 06:19:40.951-0700
+          type: string
+        current_time_unix:
+          example: 1745327980.951
+          type: number
+        is_dst:
+          example: true
+          type: boolean
+        dst_savings:
+          example: 1
+          type: integer
+        dst_exists:
+          example: true
+          type: boolean
+        dst_start:
+          $ref: '#/components/schemas/TimeZone_dst_start'
+        dst_end:
+          $ref: '#/components/schemas/TimeZone_dst_end'
+      type: object
+    Astronomy:
+      example:
+        date: 2025-07-17
+        moonset: 13:04
+        sunrise: 05:39
+        solar_noon: 13:02
+        moon_phase: LAST_QUARTER
+        sun_status: "-"
+        sun_azimuth: 82.93803947255543
+        moon_status: "-"
+        moon_parallactic_angle: 32.4113797557535
+        night_end: 03:40
+        moon_illumination_percentage: "-55.99"
+        current_time: 08:03:36.532
+        sun_altitude: 24.957683470850487
+        day_length: 14:45
+        mid_night: 01:02
+        night_begin: 22:23
+        moonrise: -:-
+        moon_distance: 371690.2207058187
+        moon_azimuth: 224.27457358894264
+        morning:
+          astronomical_twilight_end: 04:27
+          blue_hour_end: 05:20
+          astronomical_twilight_begin: 03:40
+          golden_hour_end: 06:19
+          golden_hour_begin: 05:20
+          nautical_twilight_end: 05:07
+          civil_twilight_end: 05:39
+          blue_hour_begin: 04:54
+          civil_twilight_begin: 05:07
+          nautical_twilight_begin: 04:27
+        sun_distance: 152059278.3394745
+        moon_altitude: 50.865120808868284
+        sunset: 20:24
+        evening:
+          blue_hour_end: 21:09
+          astronomical_twilight_end: 22:23
+          astronomical_twilight_begin: 21:37
+          golden_hour_end: 20:44
+          golden_hour_begin: 19:44
+          blue_hour_begin: 20:44
+          civil_twilight_end: 20:56
+          nautical_twilight_end: 21:37
+          civil_twilight_begin: 20:24
+          nautical_twilight_begin: 20:56
+        moon_angle: 263.11859022190265
+      properties:
+        date:
+          example: 2025-07-17
+          type: string
+        current_time:
+          example: 08:03:36.532
+          type: string
+        mid_night:
+          example: 01:02
+          type: string
+        night_end:
+          example: 03:40
+          type: string
+        morning:
+          $ref: '#/components/schemas/Astronomy_morning'
+        sunrise:
+          example: 05:39
+          type: string
+        sunset:
+          example: 20:24
+          type: string
+        evening:
+          $ref: '#/components/schemas/Astronomy_evening'
+        night_begin:
+          example: 22:23
+          type: string
+        sun_status:
+          example: "-"
+          type: string
+        solar_noon:
+          example: 13:02
+          type: string
+        day_length:
+          example: 14:45
+          type: string
+        sun_altitude:
+          example: 24.957683470850487
+          type: number
+        sun_distance:
+          example: 152059278.3394745
+          type: number
+        sun_azimuth:
+          example: 82.93803947255543
+          type: number
+        moon_phase:
+          example: LAST_QUARTER
+          type: string
+        moonrise:
+          example: -:-
+          type: string
+        moonset:
+          example: 13:04
+          type: string
+        moon_status:
+          example: "-"
+          type: string
+        moon_altitude:
+          example: 50.865120808868284
+          type: number
+        moon_distance:
+          example: 371690.2207058187
+          type: number
+        moon_azimuth:
+          example: 224.27457358894264
+          type: number
+        moon_parallactic_angle:
+          example: 32.4113797557535
+          type: number
+        moon_illumination_percentage:
+          example: "-55.99"
+          type: string
+        moon_angle:
+          example: 263.11859022190265
+          type: number
+      type: object
+    TimezoneDetail:
+      example:
+        date: 2025-04-24
+        week: 17
+        offset: -8
+        offset_with_dst: -7
+        year: 2025
+        year_abbr: "25"
+        date_time: 2025-04-24 11:30:12
+        month: 4
+        dst_start:
+          duration: +1H
+          overlap: true
+          utc_time: 2025-03-09 TIME 10
+          gap: true
+          date_time_after: 2025-03-09 TIME 03
+          date_time_before: 2025-03-09 TIME 02
+        dst_savings: 0
+        name: America/Los_Angeles
+        date_time_wti: "Thu, 24 Apr 2025 11:30:12 -0700"
+        dst_exists: true
+        dst_end:
+          duration: -1H
+          overlap: true
+          utc_time: 2025-11-02 TIME 09
+          gap: true
+          date_time_after: 2025-11-02 TIME 01
+          date_time_before: 2025-11-02 TIME 02
+        date_time_unix: 1745519412.353
+        time_24: "41412"
+        time_12: 11:30:12 AM
+        date_time_txt: "Thursday, April 24, 2025 11:30:12"
+        date_time_ymd: 2000-01-23T04:56:07.000+00:00
+        is_dst: true
+      properties:
+        name:
+          example: America/Los_Angeles
+          type: string
+        offset:
+          example: -8
+          type: integer
+        offset_with_dst:
+          example: -7
+          type: integer
+        date:
+          example: 2025-04-24
+          format: date
+          type: string
+        date_time:
+          example: 2025-04-24 11:30:12
+          type: string
+        date_time_txt:
+          example: "Thursday, April 24, 2025 11:30:12"
+          type: string
+        date_time_wti:
+          example: "Thu, 24 Apr 2025 11:30:12 -0700"
+          type: string
+        date_time_ymd:
+          format: date-time
+          type: string
+        date_time_unix:
+          example: 1745519412.353
+          format: double
+          type: number
+        time_24:
+          example: "41412"
+          type: string
+        time_12:
+          example: 11:30:12 AM
+          type: string
+        week:
+          example: 17
+          type: integer
+        month:
+          example: 4
+          type: integer
+        year:
+          example: 2025
+          type: integer
+        year_abbr:
+          example: "25"
+          type: string
+        is_dst:
+          type: boolean
+        dst_savings:
+          type: integer
+        dst_exists:
+          type: boolean
+        dst_start:
+          $ref: '#/components/schemas/TimezoneDetail_dst_start'
+        dst_end:
+          $ref: '#/components/schemas/TimezoneDetail_dst_end'
+      type: object
+    ASNResponse:
+      example:
+        ip: 81.73.154.79
+        asn:
+          country: IT
+          downstreams:
+          - country: IT
+            as_number: AS12779
+            description: IT.Gate S.p.A.
+          - country: IT
+            as_number: AS12779
+            description: IT.Gate S.p.A.
+          upstreams:
+          - country: IT
+            as_number: AS12779
+            description: IT.Gate S.p.A.
+          - country: IT
+            as_number: AS12779
+            description: IT.Gate S.p.A.
+          as_number: AS3269
+          peers:
+          - country: IT
+            as_number: AS12779
+            description: IT.Gate S.p.A.
+          - country: IT
+            as_number: AS12779
+            description: IT.Gate S.p.A.
+          type: ISP
+          date_allocated: 1994-11-14
+          asn_name: ASN-IBSNAZ
+          routes:
+          - 192.76.177.0/24
+          - 216.165.96.0/20
+          - 216.165.89.0/24
+          num_of_ipv4_routes: 490
+          organization: Telecom Italia S.p.A.
+          domain: business.telecomitalia.it
+          allocation_status: allocated
+          whois_response: whois output as a single string...
+          num_of_ipv6_routes: 4
+          rir: RIPE
+      properties:
+        ip:
+          description: IP address for which ASN information is returned. Present if
+            the 'ip' query parameter is used or no IP is specified (defaults to requester's
+            IP).
+          example: 81.73.154.79
+          type: string
+        asn:
+          $ref: '#/components/schemas/ASNResponse_asn'
+      type: object
+    ASNResponseXML:
+      properties:
+        ip:
+          example: 81.73.154.79
+          format: ipv4
+          type: string
+        asn:
+          $ref: '#/components/schemas/ASNResponseXML_asn'
+      type: object
+      xml:
+        name: LinkedHashMap
+    AbuseResponse:
+      example:
+        abuse:
+          emails:
+          - network-abuse@google.com
+          country: US
+          phone_numbers:
+          - +1-650-253-0000
+          route: 8.8.8.0/24
+          role: abuse
+          address: |-
+            1600 Amphitheatre Parkway
+            Mountain View
+            CA
+            94043
+            United States
+          kind: group
+          organization: Abuse
+          name: Abuse
+          handle: ABUSE5250-ARIN
+        ip: 8.8.8.8
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+        abuse:
+          $ref: '#/components/schemas/Abuse'
+      type: object
+    AbuseResponseXML:
+      properties:
+        ip:
+          example: 8.8.8.8
+          type: string
+        abuse:
+          $ref: '#/components/schemas/Abuse'
+      type: object
+      xml:
+        name: LinkedHashMap
+    ASNConnection:
+      example:
+        country: IT
+        as_number: AS12779
+        description: IT.Gate S.p.A.
+      properties:
+        as_number:
+          example: AS12779
+          type: string
+        description:
+          example: IT.Gate S.p.A.
+          type: string
+        country:
+          example: IT
+          type: string
+      type: object
+    TimezoneLocation:
+      example:
+        continent_name: Oceania
+        city: Brisbane
+        latitude: "-27.47306"
+        locality: ""
+        continent_code: OC
+        zipcode: "4101"
+        location_string: "Londong, UK"
+        district: South Brisbane
+        country_code2: AU
+        country_name: Australia
+        is_eu: false
+        country_code3: AUS
+        country_name_official: Commonwealth of Australia
+        state_prov: Queensland
+        state_code: AU-QLD
+        longitude: "153.01421"
+      properties:
+        location_string:
+          example: "Londong, UK"
+          type: string
+        continent_code:
+          example: OC
+          type: string
+        continent_name:
+          example: Oceania
+          type: string
+        country_code2:
+          example: AU
+          type: string
+        country_code3:
+          example: AUS
+          type: string
+        country_name:
+          example: Australia
+          type: string
+        country_name_official:
+          example: Commonwealth of Australia
+          type: string
+        is_eu:
+          example: false
+          type: boolean
+        state_prov:
+          example: Queensland
+          type: string
+        state_code:
+          example: AU-QLD
+          type: string
+        district:
+          example: South Brisbane
+          type: string
+        city:
+          example: Brisbane
+          type: string
+        locality:
+          example: ""
+          type: string
+        zipcode:
+          example: "4101"
+          type: string
+        latitude:
+          example: "-27.47306"
+          type: string
+        longitude:
+          example: "153.01421"
+          type: string
+      type: object
+    AstronomyLocation:
+      example:
+        continent_name: Oceania
+        elevation: "36.6"
+        city: Brisbane
+        latitude: "-27.47306"
+        locality: ""
+        continent_code: OC
+        zipcode: "4101"
+        location_string: "Londong, UK"
+        district: South Brisbane
+        country_code2: AU
+        country_name: Australia
+        is_eu: false
+        country_code3: AUS
+        country_name_official: Commonwealth of Australia
+        state_prov: Queensland
+        state_code: AU-QLD
+        longitude: "153.01421"
+      properties:
+        location_string:
+          example: "Londong, UK"
+          type: string
+        continent_code:
+          example: OC
+          type: string
+        continent_name:
+          example: Oceania
+          type: string
+        country_code2:
+          example: AU
+          type: string
+        country_code3:
+          example: AUS
+          type: string
+        country_name:
+          example: Australia
+          type: string
+        country_name_official:
+          example: Commonwealth of Australia
+          type: string
+        is_eu:
+          example: false
+          type: boolean
+        state_prov:
+          example: Queensland
+          type: string
+        state_code:
+          example: AU-QLD
+          type: string
+        district:
+          example: South Brisbane
+          type: string
+        city:
+          example: Brisbane
+          type: string
+        locality:
+          example: ""
+          type: string
+        zipcode:
+          example: "4101"
+          type: string
+        latitude:
+          example: "-27.47306"
+          type: string
+        longitude:
+          example: "153.01421"
+          type: string
+        elevation:
+          example: "36.6"
+          type: string
+      type: object
+    TimezoneAirport:
+      example:
+        country_code: US
+        icao_code: KATL
+        iata_code: ATL
+        city: Atlanta
+        faa_code: ""
+        latitude: "33.63670"
+        elevation_ft: 1026
+        name: Hartsfield Jackson Atlanta International Airport
+        continent_code: NA
+        type: large_airport
+        state_code: US-GA
+        longitude: "-84.42810"
+      properties:
+        type:
+          example: large_airport
+          type: string
+        name:
+          example: Hartsfield Jackson Atlanta International Airport
+          type: string
+        latitude:
+          example: "33.63670"
+          type: string
+        longitude:
+          example: "-84.42810"
+          type: string
+        elevation_ft:
+          example: 1026
+          type: integer
+        continent_code:
+          example: NA
+          type: string
+        country_code:
+          example: US
+          type: string
+        state_code:
+          example: US-GA
+          type: string
+        city:
+          example: Atlanta
+          type: string
+        iata_code:
+          example: ATL
+          type: string
+        icao_code:
+          example: KATL
+          type: string
+        faa_code:
+          example: ""
+          type: string
+      type: object
+    TimezoneLocode:
+      example:
+        country_code: DE
+        city: Berlin
+        latitude: "52.51667"
+        country_name: ""
+        state_code: BE
+        lo_code: DEBER
+        location_type: "Port, Rail Terminal, Road Terminal, Airport, Postal Exchange"
+        longitude: "13.38333"
+      properties:
+        lo_code:
+          example: DEBER
+          type: string
+        city:
+          example: Berlin
+          type: string
+        state_code:
+          example: BE
+          type: string
+        country_code:
+          example: DE
+          type: string
+        country_name:
+          example: ""
+          type: string
+        location_type:
+          example: "Port, Rail Terminal, Road Terminal, Airport, Postal Exchange"
+          type: string
+        latitude:
+          example: "52.51667"
+          type: string
+        longitude:
+          example: "13.38333"
+          type: string
+      type: object
+    ErrorResponse:
+      example:
+        message: The message showing the error
+      properties:
+        message:
+          example: The message showing the error
+          type: string
+      type: object
+    ErrorXMLResponse:
+      properties:
+        message:
+          example: The Message showing the error
+          type: string
+      type: object
+      xml:
+        name: Map
+    ErrorXMLResponseArray:
+      properties:
+        message:
+          example: The Message showing the error
+          type: string
+      type: object
+      xml:
+        name: item
+    getBulkIpGeolocation_request:
+      properties:
+        ips:
+          example:
+          - 2.2.2.2
+          - 3.3.3.3
+          items:
+            type: string
+          maxItems: 50000
+          type: array
+      type: object
+    getBulkIpGeolocation_200_response_inner:
+      oneOf:
+      - $ref: '#/components/schemas/ErrorResponse'
+      - $ref: '#/components/schemas/GeolocationResponse'
+    getBulkIpGeolocation_200_response_inner_1:
+      oneOf:
+      - $ref: '#/components/schemas/GeolocationXMLResponseArray'
+      - $ref: '#/components/schemas/ErrorXMLResponseArray'
+    getBulkIpSecurityInfo_200_response_inner:
+      oneOf:
+      - $ref: '#/components/schemas/SecurityAPIResponse'
+      - $ref: '#/components/schemas/ErrorResponse'
+    getBulkIpSecurityInfo_200_response_inner_1:
+      oneOf:
+      - $ref: '#/components/schemas/SecurityAPIXMLResponseArray'
+      - $ref: '#/components/schemas/ErrorXMLResponseArray'
+    parseUserAgentString_request:
+      properties:
+        uaString:
+          example: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9\
+            \ (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9"
+          type: string
+      type: object
+    parseBulkUserAgentStrings_request:
+      properties:
+        uaStrings:
+          example:
+          - "Mozilla/5.0 (Linux; Android 8.0.0; SM-G960F Build/R16NW) AppleWebKit/537.36\
+            \ (KHTML, like Gecko) Chrome/62.0.3202.84 Mobile Safari/537.36"
+          - "Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) AppleWebKit/531.2+\
+            \ (KHTML, like Gecko) Version/5.0 Safari/533.2+ Kindle/3.0+"
+          - "Mozilla/5.0 (Linux; U; en-US) AppleWebKit/528.5+ (KHTML, like Gecko,\
+            \ Safari/528.5+) Version/4.0 Kindle/3.0 (screen 600x800; rotate)"
+          items:
+            type: string
+          type: array
+      type: object
+    UserAgentData_device:
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        brand:
+          type: string
+        cpu:
+          type: string
+      type: object
+    UserAgentData_engine:
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+        version_major:
+          type: string
+      type: object
+    UserAgentData_operating_system:
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+        version_major:
+          type: string
+        build:
+          type: string
+      type: object
+    Network_asn:
+      example:
+        country: US
+        num_of_ipv4_routes: "1099"
+        organization: Google LLC
+        domain: about.google
+        as_number: AS15169
+        allocation_status: Assigned
+        num_of_ipv6_routes: "107"
+        rir: ARIN
+        type: isp
+        date_allocated: ""
+        asn_name: GOOGLE
+      properties:
+        as_number:
+          example: AS15169
+          type: string
+        organization:
+          example: Google LLC
+          type: string
+        country:
+          example: US
+          type: string
+        asn_name:
+          example: GOOGLE
+          type: string
+        type:
+          example: isp
+          type: string
+        domain:
+          example: about.google
+          type: string
+        date_allocated:
+          example: ""
+          type: string
+        allocation_status:
+          example: Assigned
+          type: string
+        num_of_ipv4_routes:
+          example: "1099"
+          type: string
+        num_of_ipv6_routes:
+          example: "107"
+          type: string
+        rir:
+          example: ARIN
+          type: string
+      type: object
+    Network_company:
+      example:
+        domain: google.com
+        name: Google LLC
+        type: hosting
+      properties:
+        name:
+          example: Google LLC
+          type: string
+        type:
+          example: hosting
+          type: string
+        domain:
+          example: google.com
+          type: string
+      type: object
+    NetworkMinimal_asn:
+      example:
+        country: US
+        organization: Google LLC
+        as_number: AS15169
+      properties:
+        as_number:
+          example: AS15169
+          type: string
+        organization:
+          example: Google LLC
+          type: string
+        country:
+          example: US
+          type: string
+      type: object
+    NetworkMinimal_company:
+      example:
+        name: Google LLC
+      properties:
+        name:
+          example: Google LLC
+          type: string
+      type: object
+    TimeZone_dst_start:
+      example:
+        duration: +1H
+        overlap: false
+        utc_time: 2025-03-09 TIME 10
+        gap: true
+        date_time_after: 2025-03-09 TIME 03
+        date_time_before: 2025-03-09 TIME 02
+      properties:
+        utc_time:
+          example: 2025-03-09 TIME 10
+          type: string
+        duration:
+          example: +1H
+          type: string
+        gap:
+          example: true
+          type: boolean
+        date_time_after:
+          example: 2025-03-09 TIME 03
+          type: string
+        date_time_before:
+          example: 2025-03-09 TIME 02
+          type: string
+        overlap:
+          example: false
+          type: boolean
+      type: object
+    TimeZone_dst_end:
+      example:
+        duration: -1H
+        overlap: true
+        utc_time: 2025-11-02 TIME 09
+        gap: false
+        date_time_after: 2025-11-02 TIME 01
+        date_time_before: 2025-11-02 TIME 02
+      properties:
+        utc_time:
+          example: 2025-11-02 TIME 09
+          type: string
+        duration:
+          example: -1H
+          type: string
+        gap:
+          example: false
+          type: boolean
+        date_time_after:
+          example: 2025-11-02 TIME 01
+          type: string
+        date_time_before:
+          example: 2025-11-02 TIME 02
+          type: string
+        overlap:
+          example: true
+          type: boolean
+      type: object
+    Astronomy_morning:
+      example:
+        astronomical_twilight_end: 04:27
+        blue_hour_end: 05:20
+        astronomical_twilight_begin: 03:40
+        golden_hour_end: 06:19
+        golden_hour_begin: 05:20
+        nautical_twilight_end: 05:07
+        civil_twilight_end: 05:39
+        blue_hour_begin: 04:54
+        civil_twilight_begin: 05:07
+        nautical_twilight_begin: 04:27
+      properties:
+        astronomical_twilight_begin:
+          example: 03:40
+          type: string
+        astronomical_twilight_end:
+          example: 04:27
+          type: string
+        nautical_twilight_begin:
+          example: 04:27
+          type: string
+        nautical_twilight_end:
+          example: 05:07
+          type: string
+        civil_twilight_begin:
+          example: 05:07
+          type: string
+        civil_twilight_end:
+          example: 05:39
+          type: string
+        blue_hour_begin:
+          example: 04:54
+          type: string
+        blue_hour_end:
+          example: 05:20
+          type: string
+        golden_hour_begin:
+          example: 05:20
+          type: string
+        golden_hour_end:
+          example: 06:19
+          type: string
+      type: object
+    Astronomy_evening:
+      example:
+        blue_hour_end: 21:09
+        astronomical_twilight_end: 22:23
+        astronomical_twilight_begin: 21:37
+        golden_hour_end: 20:44
+        golden_hour_begin: 19:44
+        blue_hour_begin: 20:44
+        civil_twilight_end: 20:56
+        nautical_twilight_end: 21:37
+        civil_twilight_begin: 20:24
+        nautical_twilight_begin: 20:56
+      properties:
+        golden_hour_begin:
+          example: 19:44
+          type: string
+        golden_hour_end:
+          example: 20:44
+          type: string
+        blue_hour_begin:
+          example: 20:44
+          type: string
+        blue_hour_end:
+          example: 21:09
+          type: string
+        civil_twilight_begin:
+          example: 20:24
+          type: string
+        civil_twilight_end:
+          example: 20:56
+          type: string
+        nautical_twilight_begin:
+          example: 20:56
+          type: string
+        nautical_twilight_end:
+          example: 21:37
+          type: string
+        astronomical_twilight_begin:
+          example: 21:37
+          type: string
+        astronomical_twilight_end:
+          example: 22:23
+          type: string
+      type: object
+    TimezoneDetail_dst_start:
+      example:
+        duration: +1H
+        overlap: true
+        utc_time: 2025-03-09 TIME 10
+        gap: true
+        date_time_after: 2025-03-09 TIME 03
+        date_time_before: 2025-03-09 TIME 02
+      properties:
+        utc_time:
+          example: 2025-03-09 TIME 10
+          type: string
+        duration:
+          example: +1H
+          type: string
+        gap:
+          type: boolean
+        date_time_after:
+          example: 2025-03-09 TIME 03
+          type: string
+        date_time_before:
+          example: 2025-03-09 TIME 02
+          type: string
+        overlap:
+          type: boolean
+      type: object
+    TimezoneDetail_dst_end:
+      example:
+        duration: -1H
+        overlap: true
+        utc_time: 2025-11-02 TIME 09
+        gap: true
+        date_time_after: 2025-11-02 TIME 01
+        date_time_before: 2025-11-02 TIME 02
+      properties:
+        utc_time:
+          example: 2025-11-02 TIME 09
+          type: string
+        duration:
+          example: -1H
+          type: string
+        gap:
+          type: boolean
+        date_time_after:
+          example: 2025-11-02 TIME 01
+          type: string
+        date_time_before:
+          example: 2025-11-02 TIME 02
+          type: string
+        overlap:
+          type: boolean
+      type: object
+    ASNResponse_asn:
+      example:
+        country: IT
+        downstreams:
+        - country: IT
+          as_number: AS12779
+          description: IT.Gate S.p.A.
+        - country: IT
+          as_number: AS12779
+          description: IT.Gate S.p.A.
+        upstreams:
+        - country: IT
+          as_number: AS12779
+          description: IT.Gate S.p.A.
+        - country: IT
+          as_number: AS12779
+          description: IT.Gate S.p.A.
+        as_number: AS3269
+        peers:
+        - country: IT
+          as_number: AS12779
+          description: IT.Gate S.p.A.
+        - country: IT
+          as_number: AS12779
+          description: IT.Gate S.p.A.
+        type: ISP
+        date_allocated: 1994-11-14
+        asn_name: ASN-IBSNAZ
+        routes:
+        - 192.76.177.0/24
+        - 216.165.96.0/20
+        - 216.165.89.0/24
+        num_of_ipv4_routes: 490
+        organization: Telecom Italia S.p.A.
+        domain: business.telecomitalia.it
+        allocation_status: allocated
+        whois_response: whois output as a single string...
+        num_of_ipv6_routes: 4
+        rir: RIPE
+      properties:
+        as_number:
+          example: AS3269
+          type: string
+        organization:
+          example: Telecom Italia S.p.A.
+          type: string
+        country:
+          example: IT
+          type: string
+        asn_name:
+          example: ASN-IBSNAZ
+          type: string
+        type:
+          example: ISP
+          type: string
+        domain:
+          example: business.telecomitalia.it
+          format: uri
+          type: string
+        date_allocated:
+          example: 1994-11-14
+          format: date
+          type: string
+        allocation_status:
+          example: allocated
+          type: string
+        num_of_ipv4_routes:
+          example: 490
+          type: integer
+        num_of_ipv6_routes:
+          example: 4
+          type: integer
+        rir:
+          example: RIPE
+          type: string
+        routes:
+          description: "It will only be included in the response, if you set include=routes\
+            \ in the request"
+          example:
+          - 192.76.177.0/24
+          - 216.165.96.0/20
+          - 216.165.89.0/24
+          items:
+            type: string
+          type: array
+        upstreams:
+          description: "It will only be included in the response, if you set include=upstreams\
+            \ in the request"
+          items:
+            $ref: '#/components/schemas/ASNConnection'
+          type: array
+        downstreams:
+          description: "It will only be included in the response, if you set include=downstreams\
+            \ in the request"
+          items:
+            $ref: '#/components/schemas/ASNConnection'
+          type: array
+        peers:
+          description: "It will only be included in the response, if you set include=peers\
+            \ in the request"
+          items:
+            $ref: '#/components/schemas/ASNConnection'
+          type: array
+        whois_response:
+          description: "It will only be included in the response, if you set include=whois_response\
+            \ in the request"
+          example: whois output as a single string...
+          type: string
+      type: object
+    ASNResponseXML_asn:
+      properties:
+        as_number:
+          example: AS3269
+          type: string
+        organization:
+          example: Telecom Italia S.p.A.
+          type: string
+        country:
+          example: IT
+          type: string
+        asn_name:
+          example: ASN-IBSNAZ
+          type: string
+        type:
+          example: ISP
+          type: string
+        domain:
+          example: business.telecomitalia.it
+          format: uri
+          type: string
+        date_allocated:
+          example: 1994-11-14
+          format: date
+          type: string
+        allocation_status:
+          example: allocated
+          type: string
+        num_of_ipv4_routes:
+          example: 490
+          type: integer
+        num_of_ipv6_routes:
+          example: 4
+          type: integer
+        rir:
+          example: RIPE
+          type: string
+        routes:
+          description: "It will only be included in the response, if you set include=routes\
+            \ in the request"
+          example:
+          - 192.76.177.0/24
+          - 216.165.96.0/20
+          - 216.165.89.0/24
+          items:
+            type: string
+          type: array
+        upstreams:
+          items:
+            $ref: '#/components/schemas/ASNConnection'
+          type: array
+        downstreams:
+          items:
+            $ref: '#/components/schemas/ASNConnection'
+          type: array
+        peers:
+          items:
+            $ref: '#/components/schemas/ASNConnection'
+          type: array
+        whois_response:
+          example: whois output as a single string...
+          type: string
+      type: object
+  securitySchemes:
+    ApiKeyAuth:
+      in: query
+      name: apiKey
+      type: apiKey
