@@ -18,30 +18,29 @@ import (
 	"net/url"
 )
 
-
 type ASNLookupAPI interface {
 
 	/*
-	GetAsnInfo Method for GetAsnInfo
+			GetAsnInfo Method for GetAsnInfo
 
-	ASN API provides comprehensive details for an ASN including the as name, 
-organization name, the country of registration, associated domain, and its 
-type (ISP, host provider, or business). The API also shows the allocation 
-date of provided ASN and if it is currently allocated or not. It also contains 
-the routing information including peering, upstreams, and downstreams to help 
-understand the relationship between different ASNs.
+			ASN API provides comprehensive details for an ASN including the as name,
+		organization name, the country of registration, associated domain, and its
+		type (ISP, host provider, or business). The API also shows the allocation
+		date of provided ASN and if it is currently allocated or not. It also contains
+		the routing information including peering, upstreams, and downstreams to help
+		understand the relationship between different ASNs.
 
-Example Use Cases:
+		Example Use Cases:
 
-- Looking up ASN information for an IP address (e.g., `GET /asn?ip=8.8.8.8`)
+		- Looking up ASN information for an IP address (e.g., `GET /asn?ip=8.8.8.8`)
 
-- Retrieving ASN information for a specific ASN number (e.g., `GET /asn?asn=12345`)
+		- Retrieving ASN information for a specific ASN number (e.g., `GET /asn?asn=12345`)
 
-- Getting peering relationships for an ASN (e.g., `GET /asn?asn=12345&include=peers`)
+		- Getting peering relationships for an ASN (e.g., `GET /asn?asn=12345&include=peers`)
 
 
-	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
-	@return ApiGetAsnInfoRequest
+			@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+			@return ApiGetAsnInfoRequest
 	*/
 	GetAsnInfo(ctx context.Context) ApiGetAsnInfoRequest
 
@@ -54,13 +53,13 @@ Example Use Cases:
 type ASNLookupAPIService service
 
 type ApiGetAsnInfoRequest struct {
-	ctx context.Context
+	ctx        context.Context
 	ApiService ASNLookupAPI
-	ip *string
-	asn *int32
-	include *string
-	excludes *string
-	fields *string
+	ip         *string
+	asn        *int32
+	include    *string
+	excludes   *string
+	fields     *string
 }
 
 // query parameter &#39;ip&#39;.
@@ -100,11 +99,11 @@ func (r ApiGetAsnInfoRequest) Execute() (*ASNResponse, *http.Response, error) {
 /*
 GetAsnInfo Method for GetAsnInfo
 
-ASN API provides comprehensive details for an ASN including the as name, 
-organization name, the country of registration, associated domain, and its 
-type (ISP, host provider, or business). The API also shows the allocation 
-date of provided ASN and if it is currently allocated or not. It also contains 
-the routing information including peering, upstreams, and downstreams to help 
+ASN API provides comprehensive details for an ASN including the as name,
+organization name, the country of registration, associated domain, and its
+type (ISP, host provider, or business). The API also shows the allocation
+date of provided ASN and if it is currently allocated or not. It also contains
+the routing information including peering, upstreams, and downstreams to help
 understand the relationship between different ASNs.
 
 Example Use Cases:
@@ -115,25 +114,25 @@ Example Use Cases:
 
 - Getting peering relationships for an ASN (e.g., `GET /asn?asn=12345&include=peers`)
 
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiGetAsnInfoRequest
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiGetAsnInfoRequest
 */
 func (a *ASNLookupAPIService) GetAsnInfo(ctx context.Context) ApiGetAsnInfoRequest {
 	return ApiGetAsnInfoRequest{
 		ApiService: a,
-		ctx: ctx,
+		ctx:        ctx,
 	}
 }
 
 // Execute executes the request
-//  @return ASNResponse
+//
+//	@return ASNResponse
 func (a *ASNLookupAPIService) GetAsnInfoExecute(r ApiGetAsnInfoRequest) (*ASNResponse, *http.Response, error) {
 	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *ASNResponse
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *ASNResponse
 	)
 
 	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "ASNLookupAPIService.GetAsnInfo")
@@ -222,8 +221,8 @@ func (a *ASNLookupAPIService) GetAsnInfoExecute(r ApiGetAsnInfoRequest) (*ASNRes
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 401 {
@@ -233,8 +232,8 @@ func (a *ASNLookupAPIService) GetAsnInfoExecute(r ApiGetAsnInfoRequest) (*ASNRes
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 404 {
@@ -244,8 +243,8 @@ func (a *ASNLookupAPIService) GetAsnInfoExecute(r ApiGetAsnInfoRequest) (*ASNRes
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 405 {
@@ -255,8 +254,8 @@ func (a *ASNLookupAPIService) GetAsnInfoExecute(r ApiGetAsnInfoRequest) (*ASNRes
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 429 {
@@ -266,8 +265,8 @@ func (a *ASNLookupAPIService) GetAsnInfoExecute(r ApiGetAsnInfoRequest) (*ASNRes
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 499 {
@@ -277,8 +276,8 @@ func (a *ASNLookupAPIService) GetAsnInfoExecute(r ApiGetAsnInfoRequest) (*ASNRes
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 			return localVarReturnValue, localVarHTTPResponse, newErr
 		}
 		if localVarHTTPResponse.StatusCode == 500 {
@@ -288,8 +287,8 @@ func (a *ASNLookupAPIService) GetAsnInfoExecute(r ApiGetAsnInfoRequest) (*ASNRes
 				newErr.error = err.Error()
 				return localVarReturnValue, localVarHTTPResponse, newErr
 			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
+			newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+			newErr.model = v
 		}
 		return localVarReturnValue, localVarHTTPResponse, newErr
 	}

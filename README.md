@@ -71,7 +71,7 @@ go get github.com/IPGeolocation/ip-geolocation-go-sdk
 Put the package under your project folder and add the following in import:
 
 ```go
-import ipgeolocation "github.com/IPGeolocation/ip-geolocation-go-sdk"
+import ipgeolocation "github.com/IPGeolocation/ip-geolocation-go-sdk/sdk"
 ```
 
 

@@ -10,7 +10,7 @@ import (
 	"os"
 	"testing"
 
-	ipgeolocation "github.com/IPGeolocation/ip-geolocation-go-sdk"
+	ipgeolocation "github.com/IPGeolocation/ip-geolocation-go-sdk/sdk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

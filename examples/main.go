@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	ipgeolocation "github.com/IPGeolocation/ip-geolocation-go-sdk"
+	ipgeolocation "github.com/IPGeolocation/ip-geolocation-go-sdk/sdk"
 )
 
 func main() {
