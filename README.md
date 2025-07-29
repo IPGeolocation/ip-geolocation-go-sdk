@@ -3,7 +3,7 @@
 Ipgeolocation provides a set of APIs to make ip based decisions.
 
 - Supports IPGeolocation API version: 2.0
-- Package version: 1.0.0
+- Package version: 1.0.1
 
 ## Table of Contents
 
