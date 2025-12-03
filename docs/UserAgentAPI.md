@@ -1,4 +1,4 @@
-# \UserAgentAPI
+# UserAgentAPI
 
 All URIs are relative to *https://api.ipgeolocation.io/v2*
 
