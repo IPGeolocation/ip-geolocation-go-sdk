@@ -1,3 +1,4 @@
+// IPGeolocation API Go SDK example for. For more examples, visit: https://ipgeolocation.io/documentation/ip-geolocation-api-go-sdk.html
 package main
 
 import (
