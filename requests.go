@@ -234,10 +234,10 @@ func normalizeLanguage(value string) (string, error) {
 	}
 
 	switch strings.ToLower(normalized) {
-	case "en", "de", "ru", "ja", "fr", "cn", "es", "cs", "it", "ko", "fa", "pt":
+	case "en", "de", "ru", "ja", "fr", "cn", "es", "cs", "it", "ko", "fa", "pt", "ar":
 		return strings.ToLower(normalized), nil
 	default:
-		return "", &ValidationError{Message: "lang must be one of: en, de, ru, ja, fr, cn, es, cs, it, ko, fa, pt"}
+		return "", &ValidationError{Message: "lang must be one of: en, de, ru, ja, fr, cn, es, cs, it, ko, fa, pt, ar"}
 	}
 }
 

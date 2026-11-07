@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -16,21 +17,13 @@ import (
 //
 // Documentation: https://ipgeolocation.io/documentation/ip-location-api.html
 type Client struct {
-	config    normalizedConfig
+	clientSettings
 	transport transport
-	closed    bool
+	closed    uint32
 }
 
 func NewClient(config *Config) (*Client, error) {
-	normalized, err := normalizeConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Client{
-		config:    normalized,
-		transport: newHTTPTransport(normalized.ConnectTimeout, DefaultMaxResponseBodyBytes),
-	}, nil
+	return newClientWithTransport(config, nil)
 }
 
 func newClientWithTransport(config *Config, transport transport) (*Client, error) {
@@ -44,169 +37,119 @@ func newClientWithTransport(config *Config, transport transport) (*Client, error
 	}
 
 	return &Client{
-		config:    normalized,
-		transport: transport,
+		clientSettings: clientSettings{config: normalized},
+		transport:      transport,
 	}, nil
 }
 
 func (c *Client) Close() {
-	if c.closed {
-		return
+	if atomic.CompareAndSwapUint32(&c.closed, 0, 1) && c.transport != nil {
+		c.transport.Close()
 	}
-
-	c.closed = true
-	c.transport.Close()
 }
 
 func (c *Client) LookupIPGeolocation(ctx context.Context, request *LookupRequest) (*APIResponse[*IPGeolocationResponse], error) {
-	if err := c.ensureReady(); err != nil {
-		return nil, err
-	}
+	return lookupTyped(c, ctx, request, parseResponse)
+}
 
-	if c.config.APIKey == "" && c.config.RequestOrigin == "" {
-		return nil, &ValidationError{Message: "single lookup requires apiKey or requestOrigin in client config"}
-	}
+func (c *Client) LookupIPGeolocationDetailed(ctx context.Context, request *LookupRequest) (*APIResponse[*DetailedIPGeolocationResponse], error) {
+	return lookupTyped(c, ctx, request, parseDetailedResponse)
+}
 
-	normalizedRequest, err := normalizeLookupRequest(request)
+func lookupTyped[T any](c *Client, ctx context.Context, request *LookupRequest, parse func(map[string]json.RawMessage) (*T, error)) (*APIResponse[*T], error) {
+	raw, err := c.single(ctx, request, true)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := validateJSONOutput(normalizedRequest.Output); err != nil {
-		return nil, err
-	}
-
-	response, durationMS, err := c.execute(ctx, c.buildLookupHTTPRequest(normalizedRequest))
+	data, err := parseSingleLookup(raw.Data, parse)
 	if err != nil {
 		return nil, err
 	}
-
-	if !isSuccessStatus(response.StatusCode) {
-		return nil, toAPIError(response.StatusCode, response.Body)
-	}
-
-	data, err := parseSingleLookup(response.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &APIResponse[*IPGeolocationResponse]{
-		Data:     data,
-		Metadata: toMetadata(response.StatusCode, durationMS, response.Headers),
-	}, nil
+	return &APIResponse[*T]{Data: data, Metadata: raw.Metadata}, nil
 }
 
 func (c *Client) LookupIPGeolocationRaw(ctx context.Context, request *LookupRequest) (*APIResponse[string], error) {
+	return c.single(ctx, request, false)
+}
+
+func (c *Client) single(ctx context.Context, request *LookupRequest, typed bool) (*APIResponse[string], error) {
 	if err := c.ensureReady(); err != nil {
 		return nil, err
 	}
-
 	if c.config.APIKey == "" && c.config.RequestOrigin == "" {
 		return nil, &ValidationError{Message: "single lookup requires apiKey or requestOrigin in client config"}
 	}
-
-	normalizedRequest, err := normalizeLookupRequest(request)
+	normalized, err := normalizeLookupRequest(request)
 	if err != nil {
 		return nil, err
 	}
-
-	response, durationMS, err := c.execute(ctx, c.buildLookupHTTPRequest(normalizedRequest))
-	if err != nil {
-		return nil, err
+	if typed {
+		if err := validateJSONOutput(normalized.Output); err != nil {
+			return nil, err
+		}
 	}
-
-	if !isSuccessStatus(response.StatusCode) {
-		return nil, toAPIError(response.StatusCode, response.Body)
-	}
-
-	return &APIResponse[string]{
-		Data:     response.Body,
-		Metadata: toMetadata(response.StatusCode, durationMS, response.Headers),
-	}, nil
+	return c.execute(ctx, c.buildLookupHTTPRequest(normalized))
 }
 
 func (c *Client) BulkLookupIPGeolocation(ctx context.Context, request *BulkLookupRequest) (*APIResponse[[]BulkLookupResult], error) {
-	if err := c.ensureReady(); err != nil {
-		return nil, err
-	}
+	return lookupBulkTyped(c, ctx, request, parseResponse, makeBulkResult)
+}
 
-	if c.config.APIKey == "" {
-		return nil, &ValidationError{Message: "bulk lookup requires apiKey in client config"}
-	}
+func makeBulkResult(data *IPGeolocationResponse, err *BulkLookupError) BulkLookupResult {
+	return BulkLookupResult{Data: data, Error: err}
+}
 
-	normalizedRequest, err := normalizeBulkLookupRequest(request)
+func (c *Client) BulkLookupIPGeolocationDetailed(ctx context.Context, request *BulkLookupRequest) (*APIResponse[[]DetailedBulkLookupResult], error) {
+	return lookupBulkTyped(c, ctx, request, parseDetailedResponse, func(data *DetailedIPGeolocationResponse, err *BulkLookupError) DetailedBulkLookupResult {
+		return DetailedBulkLookupResult{Data: data, Error: err}
+	})
+}
+
+func lookupBulkTyped[T, R any](c *Client, ctx context.Context, request *BulkLookupRequest, parse func(map[string]json.RawMessage) (*T, error), row func(*T, *BulkLookupError) R) (*APIResponse[[]R], error) {
+	raw, count, err := c.bulk(ctx, request, true)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := validateJSONOutput(normalizedRequest.Output); err != nil {
-		return nil, err
-	}
-
-	bulkRequestData, err := c.buildBulkHTTPRequest(normalizedRequest)
+	data, err := parseBulkLookup(raw.Data, count, c.config.APIKey, parse, row)
 	if err != nil {
 		return nil, err
 	}
-
-	response, durationMS, err := c.execute(ctx, bulkRequestData)
-	if err != nil {
-		return nil, err
-	}
-
-	if !isSuccessStatus(response.StatusCode) {
-		return nil, toAPIError(response.StatusCode, response.Body)
-	}
-
-	data, err := parseBulkLookup(response.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &APIResponse[[]BulkLookupResult]{
-		Data:     data,
-		Metadata: toMetadata(response.StatusCode, durationMS, response.Headers),
-	}, nil
+	return &APIResponse[[]R]{Data: data, Metadata: raw.Metadata}, nil
 }
 
 func (c *Client) BulkLookupIPGeolocationRaw(ctx context.Context, request *BulkLookupRequest) (*APIResponse[string], error) {
+	raw, _, err := c.bulk(ctx, request, false)
+	return raw, err
+}
+
+func (c *Client) bulk(ctx context.Context, request *BulkLookupRequest, typed bool) (*APIResponse[string], int, error) {
 	if err := c.ensureReady(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
 	if c.config.APIKey == "" {
-		return nil, &ValidationError{Message: "bulk lookup requires apiKey in client config"}
+		return nil, 0, &ValidationError{Message: "bulk lookup requires apiKey in client config"}
 	}
-
-	normalizedRequest, err := normalizeBulkLookupRequest(request)
+	normalized, err := normalizeBulkLookupRequest(request)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
-	bulkRequestData, err := c.buildBulkHTTPRequest(normalizedRequest)
+	if typed {
+		if err := validateJSONOutput(normalized.Output); err != nil {
+			return nil, 0, err
+		}
+	}
+	req, err := c.buildBulkHTTPRequest(normalized)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
-	response, durationMS, err := c.execute(ctx, bulkRequestData)
-	if err != nil {
-		return nil, err
-	}
-
-	if !isSuccessStatus(response.StatusCode) {
-		return nil, toAPIError(response.StatusCode, response.Body)
-	}
-
-	return &APIResponse[string]{
-		Data:     response.Body,
-		Metadata: toMetadata(response.StatusCode, durationMS, response.Headers),
-	}, nil
+	raw, err := c.execute(ctx, req)
+	return raw, len(normalized.IPs), err
 }
 
 func (c *Client) ensureReady() error {
-	if c.closed {
+	if atomic.LoadUint32(&c.closed) != 0 {
 		return &ValidationError{Message: "client is closed"}
 	}
-
 	return nil
 }
 
@@ -279,15 +222,16 @@ func (c *Client) buildHeaders(requestHeaders map[string]string, requestUserAgent
 	return headers
 }
 
-func (c *Client) execute(ctx context.Context, request *httpRequestData) (*httpResponseData, int, error) {
+func (c *Client) execute(ctx context.Context, request *httpRequestData) (*APIResponse[string], error) {
 	startedAt := time.Now()
 	response, err := c.transport.Send(ctx, request)
 	if err != nil {
-		return nil, 0, err
+		return nil, safeTransportError(err, c.config.APIKey)
 	}
-
-	durationMS := int(time.Since(startedAt) / time.Millisecond)
-	return response, durationMS, nil
+	if !isSuccessStatus(response.StatusCode) {
+		return nil, toAPIError(response.StatusCode, response.Body, c.config.APIKey)
+	}
+	return &APIResponse[string]{Data: response.Body, Metadata: toMetadata(response.StatusCode, int(time.Since(startedAt)/time.Millisecond), response.Headers)}, nil
 }
 
 func isSuccessStatus(statusCode int) bool {

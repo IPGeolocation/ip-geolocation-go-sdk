@@ -12,7 +12,7 @@ func TestParseBulkLookupMixedSuccessAndError(t *testing.T) {
 	  { "error": { "message": "Quota exceeded." } }
 	]`
 
-	result, err := parseBulkLookup(body)
+	result, err := parseBulkLookup(body, 3, "", parseResponse, makeBulkResult)
 	if err != nil {
 		t.Fatalf("parseBulkLookup() error = %v", err)
 	}
@@ -47,7 +47,7 @@ func TestParseSingleLookupDoesNotInventMissingFields(t *testing.T) {
 	  "ip": "8.8.8.8",
 	  "location": { "country_name": "United States" },
 	  "security": { "threat_score": 1.5 }
-	}`)
+	}`, parseResponse)
 	if err != nil {
 		t.Fatalf("parseSingleLookup() error = %v", err)
 	}
@@ -89,7 +89,7 @@ func TestParseSingleLookupTopLevelASNAndCompany(t *testing.T) {
 	    "name": "Google LLC",
 	    "domain": "google.com"
 	  }
-	}`)
+	}`, parseResponse)
 	if err != nil {
 		t.Fatalf("parseSingleLookup() error = %v", err)
 	}
@@ -119,7 +119,7 @@ func TestParseSingleLookupTimeZoneUsesCurrentAPIKeys(t *testing.T) {
 	    "dst_tz_abbreviation": "CDT",
 	    "dst_tz_full_name": "Central Daylight Time"
 	  }
-	}`)
+	}`, parseResponse)
 	if err != nil {
 		t.Fatalf("parseSingleLookup() error = %v", err)
 	}
@@ -160,7 +160,7 @@ func TestParseSingleLookupTimeZoneFallsBackToLegacyKeys(t *testing.T) {
 	    "dst_timezone_abbreviation": "CDT",
 	    "dst_timezone_name": "Central Daylight Time"
 	  }
-	}`)
+	}`, parseResponse)
 	if err != nil {
 		t.Fatalf("parseSingleLookup() error = %v", err)
 	}

@@ -8,7 +8,10 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
+	"unicode"
 )
 
 type transport interface {
@@ -33,23 +36,57 @@ type httpResponseData struct {
 type httpTransport struct {
 	client               *http.Client
 	maxResponseBodyBytes int
+	customHeaderTimeout  time.Duration
 }
 
 func newHTTPTransport(connectTimeout time.Duration, maxResponseBodyBytes int) *httpTransport {
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.DialContext = (&net.Dialer{
-		Timeout:   connectTimeout,
-		KeepAlive: 30 * time.Second,
-	}).DialContext
-	transport.ResponseHeaderTimeout = connectTimeout
-	transport.TLSHandshakeTimeout = connectTimeout
-
-	return &httpTransport{
-		client: &http.Client{
-			Transport: transport,
-		},
-		maxResponseBodyBytes: maxResponseBodyBytes,
+	base := http.DefaultTransport
+	var customHeaderTimeout time.Duration
+	if tr, ok := base.(*http.Transport); ok || base == nil {
+		if tr == nil {
+			tr = &http.Transport{Proxy: http.ProxyFromEnvironment, ForceAttemptHTTP2: true}
+		}
+		owned := tr.Clone()
+		owned.DialContext = (&net.Dialer{Timeout: connectTimeout, KeepAlive: 30 * time.Second}).DialContext
+		owned.ResponseHeaderTimeout = connectTimeout
+		owned.TLSHandshakeTimeout = connectTimeout
+		base = owned
+	} else {
+		customHeaderTimeout = connectTimeout
 	}
+	return &httpTransport{client: &http.Client{Transport: base, CheckRedirect: checkRedirect}, maxResponseBodyBytes: maxResponseBodyBytes, customHeaderTimeout: customHeaderTimeout}
+}
+
+func checkRedirect(req *http.Request, via []*http.Request) error {
+	first := via[0].URL
+	if req.URL.User != nil || first.Scheme != req.URL.Scheme || !sameHostname(first.Hostname(), req.URL.Hostname()) || originPort(first) != originPort(req.URL) {
+		return http.ErrUseLastResponse
+	}
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+	req.Header.Del("Referer")
+	return nil
+}
+
+func sameHostname(a, b string) bool {
+	if a == b {
+		return true
+	}
+	if strings.Contains(a, "%") || strings.Contains(b, "%") || strings.IndexFunc(a+b, func(r rune) bool { return r > unicode.MaxASCII }) >= 0 {
+		return false
+	}
+	return strings.EqualFold(a, b)
+}
+
+func originPort(u *url.URL) string {
+	if p := u.Port(); p != "" {
+		return p
+	}
+	if u.Scheme == "https" {
+		return "443"
+	}
+	return "80"
 }
 
 func newHTTPTransportWithClient(client *http.Client, maxResponseBodyBytes int) *httpTransport {
@@ -88,7 +125,20 @@ func (t *httpTransport) Send(ctx context.Context, request *httpRequestData) (*ht
 		}
 	}
 
+	var timer *time.Timer
+	if t.customHeaderTimeout > 0 {
+		headerCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		httpRequest = httpRequest.WithContext(headerCtx)
+		timer = time.AfterFunc(t.customHeaderTimeout, cancel)
+	}
 	response, err := t.client.Do(httpRequest)
+	if timer != nil && !timer.Stop() && ctx.Err() == nil {
+		if response != nil {
+			response.Body.Close()
+		}
+		err = context.DeadlineExceeded
+	}
 	if err != nil {
 		if ctx.Err() == nil && isTimeoutError(err) {
 			return nil, &RequestTimeoutError{
@@ -103,7 +153,7 @@ func (t *httpTransport) Send(ctx context.Context, request *httpRequestData) (*ht
 	}
 
 	bodyBytes, err := t.readBody(response.Body, request.ReadTimeout)
-	if err != nil {
+	if err != nil && isSuccessStatus(response.StatusCode) {
 		return nil, err
 	}
 
