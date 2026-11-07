@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"syscall"
 )
@@ -76,6 +77,8 @@ func safeTransportError(err error, key string) error {
 	}
 }
 
+var plainErrorType = reflect.TypeOf(errors.New(""))
+
 func safeCause(err error, key string) error {
 	if err == nil {
 		return nil
@@ -106,7 +109,12 @@ func safeCause(err error, key string) error {
 		copy.Source, copy.Addr = safeAddr(e.Source, key), safeAddr(e.Addr, key)
 		return &copy
 	case *net.DNSError:
-		return &net.DNSError{Err: redactKey(e.Err, key), Name: redactKey(e.Name, key), Server: redactKey(e.Server, key), IsTimeout: e.IsTimeout, IsTemporary: e.IsTemporary, IsNotFound: e.IsNotFound}
+		clean := *e
+		if cause := errors.Unwrap(e); cause != nil && cause != context.Canceled && cause != context.DeadlineExceeded {
+			clean = net.DNSError{IsTimeout: e.IsTimeout, IsTemporary: e.IsTemporary, IsNotFound: e.IsNotFound}
+		}
+		clean.Err, clean.Name, clean.Server = redactKey(e.Err, key), redactKey(e.Name, key), redactKey(e.Server, key)
+		return &clean
 	case *os.SyscallError:
 		return &os.SyscallError{Syscall: redactKey(e.Syscall, key), Err: safeCause(e.Err, key)}
 	case syscall.Errno:
@@ -121,7 +129,12 @@ func safeCause(err error, key string) error {
 	if errors.As(err, &timeout) && timeout.Timeout() {
 		return context.DeadlineExceeded
 	}
-	return errors.New(redactKey(err.Error(), key))
+	message := err.Error()
+	safe := redactKey(message, key)
+	if safe == message && reflect.TypeOf(err) == plainErrorType {
+		return err
+	}
+	return errors.New(safe)
 }
 
 func safeCertificate(cert *x509.Certificate, key string) *x509.Certificate {

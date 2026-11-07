@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -160,14 +161,24 @@ func TestKeyHiddenInFormattingAndErrors(t *testing.T) {
 		}
 	}
 	site := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	address := site.Listener.Addr().String()
 	site.Close()
+	conn, dialErr := net.DialTimeout("tcp", address, 2*time.Second)
+	if conn != nil {
+		conn.Close()
+		t.Fatal("expected a refused loopback connection")
+	}
+	var refused syscall.Errno
+	if !errors.As(dialErr, &refused) {
+		t.Fatalf("could not identify the native connection error: %v", dialErr)
+	}
 	c, err = NewClient(&Config{APIKey: key, BaseURL: site.URL})
 	if err != nil {
 		t.Fatal(err)
 	}
 	_, err = c.LookupIPGeolocationRaw(nil, nil)
 	var cause *url.Error
-	if !errors.As(err, &cause) || strings.Contains(cause.URL, "apiKey") || !errors.Is(err, syscall.ECONNREFUSED) {
+	if !errors.As(err, &cause) || strings.Contains(cause.URL, "apiKey") || !errors.Is(err, refused) {
 		t.Errorf("unexpected connection error: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -283,5 +294,32 @@ func TestCertificateErrorsAndInvalidAddresses(t *testing.T) {
 	}
 	if _, err := NewClient(&Config{BaseURL: "https://example.test/path%23id"}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSafeDiagnosticRetainsPlainSentinels(t *testing.T) {
+	marker := errors.New("upstream error")
+	original := &url.Error{Op: "Get", URL: "https://example.test/?apiKey=synthetic-key", Err: marker}
+	protected := safeCause(original, "synthetic-key")
+	if !errors.Is(protected, marker) || strings.Contains(protected.Error(), "synthetic-key") {
+		t.Fatal("lost sentinel or exposed the key")
+	}
+	echoed := errors.New("upstream echoed synthetic-key")
+	protected = safeCause(echoed, "synthetic-key")
+	if errors.Is(protected, echoed) || strings.Contains(protected.Error(), "synthetic-key") {
+		t.Fatal("retained an error with the key")
+	}
+}
+
+type customRequestError struct{ requestURL string }
+
+func (e *customRequestError) Error() string { return "network request failed" }
+
+func TestCustomNetworkErrorDropsPrivateFields(t *testing.T) {
+	cause := &customRequestError{requestURL: "https://example.test/?apiKey=synthetic-key"}
+	protected := safeCause(cause, "synthetic-key")
+	var original *customRequestError
+	if errors.As(protected, &original) || protected.Error() != cause.Error() {
+		t.Fatal("custom error was retained or its message changed")
 	}
 }

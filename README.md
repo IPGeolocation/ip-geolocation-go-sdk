@@ -383,7 +383,7 @@ fmt.Println(response.Metadata.FirstHeaderValue("content-type"))
 
 ## Errors
 
-The SDK hides your API key when you print a client or its settings with `fmt`, and in request errors and typed bulk error messages. If an API error is too large to read or the connection closes early, you still get the HTTP status.
+The SDK hides your API key when you print a client or its settings with `fmt`, and in request errors and typed bulk error messages. If an API error is too large to read or the connection closes early, you still get the HTTP status. If a custom network error could contain your key, the SDK may return its message without the original error type.
 
 | Error Type | When it happens |
 |------------|-----------------|
