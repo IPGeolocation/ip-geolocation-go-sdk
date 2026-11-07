@@ -107,7 +107,7 @@ func main() {
 | Supported Endpoints | `/v3/ipgeo`, `/v3/ipgeo-bulk` |
 | Supported Inputs | IPv4, IPv6, domain |
 | Main Data Returned | Geolocation, company, ASN, time zone, network, hostname, abuse, user-agent, currency, security |
-| Authentication | API key, request-origin auth for `/v3/ipgeo` only |
+| Authentication | API key |
 | Response Formats | Structured JSON, raw JSON, raw XML |
 | Bulk Limit | Up to 50,000 IPs or domains per request |
 | Transport | Go standard library `net/http` |
@@ -122,7 +122,7 @@ Create an IPGeolocation.io account and copy an API key from your dashboard.
 4. Open your dashboard: <https://app.ipgeolocation.io/dashboard>
 5. Copy an API key from the `API Keys` section
 
-For server-side code, keep the API key in an environment variable or secret manager. For browser-based single lookups on paid plans, use request-origin auth instead of exposing an API key in frontend code.
+Keep your IPGeolocation.io API key in an environment variable or secret manager.
 
 ## Authentication
 
@@ -134,21 +134,7 @@ client, err := ipgeolocation.NewClient(&ipgeolocation.Config{
 })
 ```
 
-### Request-Origin Auth
-
-```go
-client, err := ipgeolocation.NewClient(&ipgeolocation.Config{
-	RequestOrigin: "https://app.example.com",
-})
-```
-
-`RequestOrigin` must be an absolute `http` or `https` origin with no path, query string, fragment, or userinfo.
-
-> [!IMPORTANT]
-> Request-origin auth does not work with `/v3/ipgeo-bulk`. Bulk lookup always requires `APIKey`.
-
-> [!NOTE]
-> If you set both `APIKey` and `RequestOrigin`, single lookup still uses the API key. The API key is sent as the `apiKey` query parameter, so avoid logging full request URLs.
+The API key is sent as the `apiKey` query parameter, so avoid logging full request URLs.
 
 ## Plan Behavior
 
@@ -160,7 +146,6 @@ Feature availability depends on your plan and request parameters.
 | Domain lookup | Not supported | Supported |
 | Bulk lookup | Not supported | Supported |
 | Non-English `lang` | Not supported | Supported |
-| Request-origin auth | Not supported | Supported for `/v3/ipgeo` only |
 | Optional modules via `include` | Not supported | Supported |
 | `include: ["*"]` | Base response only | All plan-available modules |
 
@@ -170,9 +155,8 @@ Paid plans still need `include` for optional modules. `fields` and `excludes` on
 
 | Field | Type | Default | Notes |
 |-------|------|---------|-------|
-| `APIKey` | `string` | unset | Required for bulk lookup. Optional for single lookup if `RequestOrigin` is set. |
-| `RequestOrigin` | `string` | unset | Must be an absolute `http` or `https` origin. |
-| `BaseURL` | `string` | `https://api.ipgeolocation.io` | Override the API base URL. |
+| `APIKey` | `string` | unset | Your IPGeolocation.io API key. |
+| `BaseURL` | `string` | `https://api.ipgeolocation.io` | Use the final address of your API or proxy. The SDK follows redirects only when the protocol, host, and port stay the same. |
 | `ConnectTimeout` | `time.Duration` | `10 * time.Second` | Time to open the connection or wait for response headers. |
 | `ReadTimeout` | `time.Duration` | `30 * time.Second` | Time to wait while reading the response body. |
 
@@ -186,6 +170,8 @@ Create a client with `NewClient`. Config values are validated when the client is
 | `LookupIPGeolocationRaw(ctx, request)` | `*APIResponse[string]` | Single lookup. Raw JSON or XML string. |
 | `BulkLookupIPGeolocation(ctx, request)` | `*APIResponse[[]BulkLookupResult]` | Bulk lookup. Typed JSON response. |
 | `BulkLookupIPGeolocationRaw(ctx, request)` | `*APIResponse[string]` | Bulk lookup. Raw JSON or XML string. |
+| `LookupIPGeolocationDetailed(ctx, request)` | `*APIResponse[*DetailedIPGeolocationResponse]` | Single lookup with extra CDN, proxy, bot, and corporate gateway fields. |
+| `BulkLookupIPGeolocationDetailed(ctx, request)` | `*APIResponse[[]DetailedBulkLookupResult]` | Bulk lookup with the same extra fields. |
 | `Close()` | `void` | Closes idle HTTP connections and marks the client closed. |
 
 > [!NOTE]
@@ -197,7 +183,7 @@ Create a client with `NewClient`. Config values are validated when the client is
 |-------|------------|-------|
 | `IP` | Single lookup | IPv4, IPv6, or domain. Leave it empty for caller IP lookup. |
 | `IPs` | Bulk lookup | Collection of 1 to 50,000 IPs or domains. |
-| `Lang` | Single and bulk | One of `en`, `de`, `ru`, `ja`, `fr`, `cn`, `es`, `cs`, `it`, `ko`, `fa`, `pt`. |
+| `Lang` | Single and bulk | One of `en`, `de`, `ru`, `ja`, `fr`, `cn`, `es`, `cs`, `it`, `ko`, `fa`, `pt`, `ar` (Arabic). |
 | `Include` | Single and bulk | Collection of module names such as `security`, `abuse`, `user_agent`, `hostname`, `liveHostname`, `hostnameFallbackLive`, `geo_accuracy`, `dma_code`, or `*`. |
 | `Fields` | Single and bulk | Collection of field paths to keep, for example `location.country_name` or `security.threat_score`. |
 | `Excludes` | Single and bulk | Collection of field paths to remove from the response. |
@@ -340,6 +326,8 @@ fmt.Println(response.Data)
 
 ### Bulk Lookup
 
+A typed bulk lookup returns one result for each input, in the same order. If the API sends too few or too many results, the SDK returns `*SerializationError`. Raw lookups return the response as received.
+
 ```go
 response, err := client.BulkLookupIPGeolocation(context.Background(), &ipgeolocation.BulkLookupRequest{
 	IPs: []string{"8.8.8.8", "1.1.1.1"},
@@ -395,7 +383,7 @@ fmt.Println(response.Metadata.FirstHeaderValue("content-type"))
 
 ## Errors
 
-The SDK returns typed errors instead of leaving you to parse error bodies yourself.
+The SDK hides your API key when you print a client or its settings with `fmt`, and in request errors and typed bulk error messages. If an API error is too large to read or the connection closes early, you still get the HTTP status. If a custom network error could contain your key, the SDK may return its message without the original error type.
 
 | Error Type | When it happens |
 |------------|-----------------|
@@ -439,20 +427,13 @@ if err != nil {
 
 ## Troubleshooting
 
-- Bulk lookup always requires `APIKey`. `RequestOrigin` is not enough.
+- Set `APIKey` before making a lookup.
 - Typed methods only support JSON. Use the raw methods for XML.
 - If you need security, abuse, user-agent, or hostname data, include those modules explicitly.
 - `Fields` and `Excludes` filter the response. They do not unlock paid data.
-- `RequestOrigin` must be an origin only. Do not include a path, query string, fragment, or userinfo.
 - Response fields are pointers so omitted fields stay omitted.
 
 ## Frequently Asked Questions
-
-<details>
-<summary>Can I use this SDK without an API key?</summary>
-
-Only for single lookup with paid-plan request-origin auth. Bulk lookup always requires an API key.
-</details>
 
 <details>
 <summary>Can I request XML and still get typed models?</summary>

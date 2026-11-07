@@ -69,7 +69,7 @@ func toMetadata(statusCode int, durationMS int, headers http.Header) ResponseMet
 	return metadata
 }
 
-func toAPIError(statusCode int, body string) error {
+func toAPIError(statusCode int, body, apiKey string) error {
 	message := extractAPIMessage(body)
 	if message == "" {
 		message = apiErrorMessage(statusCode)
@@ -77,7 +77,7 @@ func toAPIError(statusCode int, body string) error {
 
 	base := APIError{
 		StatusCode: statusCode,
-		Message:    message,
+		Message:    redactKey(message, apiKey),
 	}
 
 	switch statusCode {
@@ -134,48 +134,46 @@ func extractAPIMessage(body string) string {
 	return strings.TrimSpace(body)
 }
 
-func parseSingleLookup(body string) (*IPGeolocationResponse, error) {
+func parseSingleLookup[T any](body string, parse func(map[string]json.RawMessage) (*T, error)) (*T, error) {
 	object, err := decodeObject([]byte(body))
 	if err != nil {
 		return nil, &SerializationError{Message: "Failed to parse single lookup response body", Err: err}
 	}
-
-	response, err := parseResponse(object)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return parse(object)
 }
 
-func parseBulkLookup(body string) ([]BulkLookupResult, error) {
-	var items []json.RawMessage
-	if err := json.Unmarshal([]byte(body), &items); err != nil {
-		return nil, &SerializationError{Message: "Failed to parse bulk lookup response body", Err: err}
+func parseBulkLookup[T, R any](body string, count int, apiKey string, parse func(map[string]json.RawMessage) (*T, error), row func(*T, *BulkLookupError) R) ([]R, error) {
+	decoder := json.NewDecoder(strings.NewReader(body))
+	opening, err := decoder.Token()
+	if err != nil || opening != json.Delim('[') {
+		return nil, &SerializationError{Message: "Expected an array of bulk results", Err: err}
 	}
-
-	results := make([]BulkLookupResult, 0, len(items))
-	for _, item := range items {
-		object, err := decodeObject(item)
-		if err != nil {
-			return nil, &SerializationError{Message: "Failed to parse bulk lookup response body", Err: err}
+	results := make([]R, 0, count)
+	for decoder.More() {
+		if len(results) == count {
+			return nil, &SerializationError{Message: fmt.Sprintf("Received more than %d bulk results", count)}
 		}
-
+		var object map[string]json.RawMessage
+		if err := decoder.Decode(&object); err != nil || object == nil {
+			return nil, &SerializationError{Message: "Expected an object for each bulk result", Err: err}
+		}
 		if isBulkError(object) {
-			results = append(results, BulkLookupResult{
-				Error: &BulkLookupError{Message: readBulkErrorMessage(object)},
-			})
+			results = append(results, row(nil, &BulkLookupError{Message: redactKey(readBulkErrorMessage(object), apiKey)}))
 			continue
 		}
-
-		response, err := parseResponse(object)
+		data, err := parse(object)
 		if err != nil {
 			return nil, err
 		}
-
-		results = append(results, BulkLookupResult{Data: response})
+		results = append(results, row(data, nil))
 	}
-
+	closing, err := decoder.Token()
+	if err != nil || closing != json.Delim(']') || strings.Trim(body[decoder.InputOffset():], " \t\r\n") != "" {
+		return nil, &SerializationError{Message: "Invalid end of bulk lookup response", Err: err}
+	}
+	if len(results) != count {
+		return nil, &SerializationError{Message: fmt.Sprintf("Expected %d bulk results, received %d", count, len(results))}
+	}
 	return results, nil
 }
 

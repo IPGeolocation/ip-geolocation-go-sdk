@@ -3,7 +3,9 @@ package ipgeolocation
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
+	"unicode"
 )
 
 func TestLiveSingleTypedAndRawShareKeyFields(t *testing.T) {
@@ -204,4 +206,37 @@ func requireRawFloat(t *testing.T, object map[string]interface{}, key string) fl
 	}
 
 	return parsed
+}
+
+func TestLiveArabicSingleAndBulk(t *testing.T) {
+	key := requireLiveHardening(t)
+	client, err := NewClient(&Config{APIKey: key})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+	req := &LookupRequest{IP: "8.8.8.8", Lang: "ar", Include: []string{"security"}}
+	info, err := client.LookupIPGeolocationDetailed(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Data.Location == nil || info.Data.Location.CountryName == nil || strings.IndexFunc(*info.Data.Location.CountryName, func(r rune) bool { return unicode.Is(unicode.Arabic, r) }) < 0 {
+		t.Fatal("single lookup did not return an Arabic country name")
+	}
+	if info.Data.Network == nil || info.Data.Network.IsCDN == nil || info.Data.Security == nil || info.Data.Security.IsCorporateGateway == nil {
+		t.Fatal("single lookup omitted requested network or security details")
+	}
+	bulk, err := client.BulkLookupIPGeolocationDetailed(context.Background(), &BulkLookupRequest{IPs: []string{req.IP, "invalid-ip", req.IP}, Lang: req.Lang, Include: req.Include})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(bulk.Data) != 3 || !bulk.Data[0].IsSuccess() || bulk.Data[1].Error == nil || !bulk.Data[2].IsSuccess() {
+		t.Fatal("unexpected bulk row order")
+	}
+	for _, i := range []int{0, 2} {
+		row := bulk.Data[i].Data
+		if row.Location == nil || row.Location.CountryName == nil || *row.Location.CountryName != *info.Data.Location.CountryName || row.Security == nil || row.Security.IsCorporateGateway == nil {
+			t.Fatal("bulk lookup omitted Arabic or security details")
+		}
+	}
 }

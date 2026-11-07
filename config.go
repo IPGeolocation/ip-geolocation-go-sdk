@@ -160,7 +160,7 @@ func normalizeRequestOrigin(value string) (string, error) {
 	}
 
 	parsed, err := url.Parse(normalized)
-	if err != nil || !parsed.IsAbs() || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+	if err != nil || parsed.Hostname() == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
 		return "", &ValidationError{Message: "requestOrigin must be an absolute http or https origin"}
 	}
 
@@ -168,7 +168,7 @@ func normalizeRequestOrigin(value string) (string, error) {
 		return "", &ValidationError{Message: "requestOrigin must not include userinfo"}
 	}
 
-	if parsed.RawQuery != "" || parsed.Fragment != "" {
+	if parsed.ForceQuery || parsed.RawQuery != "" || strings.Contains(normalized, "#") {
 		return "", &ValidationError{Message: "requestOrigin must not include query or fragment"}
 	}
 
@@ -186,7 +186,7 @@ func normalizeBaseURL(value string) (string, error) {
 	}
 
 	parsed, err := url.Parse(normalized)
-	if err != nil || !parsed.IsAbs() || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+	if err != nil || parsed.Hostname() == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
 		return "", &ValidationError{Message: "baseUrl must be an absolute http or https URL"}
 	}
 
@@ -194,7 +194,7 @@ func normalizeBaseURL(value string) (string, error) {
 		return "", &ValidationError{Message: "baseUrl must not include userinfo"}
 	}
 
-	if parsed.RawQuery != "" || parsed.Fragment != "" {
+	if parsed.ForceQuery || parsed.RawQuery != "" || strings.Contains(normalized, "#") {
 		return "", &ValidationError{Message: "baseUrl must not include query or fragment"}
 	}
 
