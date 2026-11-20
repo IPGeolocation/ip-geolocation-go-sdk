@@ -36,9 +36,9 @@ go get github.com/IPGeolocation/ip-geolocation-go-sdk/v2
 import ipgeolocation "github.com/IPGeolocation/ip-geolocation-go-sdk/v2"
 ```
 
-Go module: `github.com/IPGeolocation/ip-geolocation-go-sdk/v2`
-Package page: <https://pkg.go.dev/github.com/IPGeolocation/ip-geolocation-go-sdk/v2>
-GitHub repository: <https://github.com/IPGeolocation/ip-geolocation-go-sdk>
+- Go module: `github.com/IPGeolocation/ip-geolocation-go-sdk/v2`
+- Package page: <https://pkg.go.dev/github.com/IPGeolocation/ip-geolocation-go-sdk/v2>
+- GitHub repository: <https://github.com/IPGeolocation/ip-geolocation-go-sdk>
 
 ## Quick Start
 
